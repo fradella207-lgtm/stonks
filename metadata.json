@@ -1,0 +1,6 @@
+{
+  "name": "stonks",
+  "description": "Gestione spese ed entrate con design leggero in stile Nothing OS, statistiche avanzate, temi personalizzabili, import/export CSV/JSON e sincronizzazione cloud.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

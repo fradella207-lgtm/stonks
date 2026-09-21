@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['date', 'type', 'description', 'amount', 'month'])
+        && data.date is string && data.date.size() >= 8 && data.date.size() <= 32
+        && (data.type == 'income' || data.type == 'expense')
+        && data.description is string && data.description.size() <= 300
+        && data.amount is number && data.amount > 0
+        && data.month is string && data.month.size() >= 4 && data.month.size() <= 16
+        && (!('category' in data) || (data.category is string && data.category.size() <= 100))
+        && (!('location' in data) || (data.location is string && data.location.size() <= 200))
+        && (!('receiptImage' in data) || (data.receiptImage is string && data.receiptImage.size() <= 500000));
+    }
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) && isValidId(userId);
+
+      match /transactions/{transactionId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidId(transactionId)
+          && isValidTransaction(request.resource.data);
+        allow update: if isOwner(userId)
+          && isValidId(transactionId)
+          && isValidTransaction(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

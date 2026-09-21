@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+@layer base {
+  :root,
+  .theme-dark {
+    --app-bg: #09090b;
+    --card-bg: #121216;
+    --card-subtle-bg: #18181f;
+    --card-hover-bg: #22222b;
+    --text-main: #fafafa;
+    --text-sub: #a1a1aa;
+    --text-muted: #71717a;
+    --border-color: rgba(255, 255, 255, 0.09);
+    --border-subtle-color: rgba(255, 255, 255, 0.04);
+    --dot-color: rgba(255, 255, 255, 0.07);
+    --header-bg: rgba(9, 9, 11, 0.88);
+    --modal-bg: #0f0f14;
+    --input-bg: #18181f;
+    --tabbar-bg: rgba(12, 12, 16, 0.94);
+  }
+
+  .theme-black {
+    --app-bg: #000000;
+    --card-bg: #080808;
+    --card-subtle-bg: #121212;
+    --card-hover-bg: #1a1a1a;
+    --text-main: #ffffff;
+    --text-sub: #a1a1aa;
+    --text-muted: #52525b;
+    --border-color: rgba(255, 255, 255, 0.12);
+    --border-subtle-color: rgba(255, 255, 255, 0.06);
+    --dot-color: rgba(255, 255, 255, 0.09);
+    --header-bg: rgba(0, 0, 0, 0.92);
+    --modal-bg: #080808;
+    --input-bg: #121212;
+    --tabbar-bg: rgba(0, 0, 0, 0.94);
+  }
+
+  .theme-light {
+    --app-bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --card-subtle-bg: #f1f3f7;
+    --card-hover-bg: #e8ecf2;
+    --text-main: #09090b;
+    --text-sub: #4b5563;
+    --text-muted: #6b7280;
+    --border-color: rgba(0, 0, 0, 0.09);
+    --border-subtle-color: rgba(0, 0, 0, 0.05);
+    --dot-color: rgba(0, 0, 0, 0.07);
+    --header-bg: rgba(248, 249, 250, 0.92);
+    --modal-bg: #ffffff;
+    --input-bg: #f3f4f6;
+    --tabbar-bg: rgba(255, 255, 255, 0.95);
+  }
+
+  body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--app-bg);
+    color: var(--text-main);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  
+  .font-mono-code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* Safe Area Inset Helpers for iOS Dynamic Island / Notch and Android Status Bar */
+.pt-safe {
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+}
+
+.pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+
+/* Semantic Theme Helpers */
+.bg-app-canvas {
+  background-color: var(--app-bg);
+}
+
+.bg-app-card {
+  background-color: var(--card-bg);
+}
+
+.bg-app-subtle {
+  background-color: var(--card-subtle-bg);
+}
+
+.bg-app-hover:hover {
+  background-color: var(--card-hover-bg);
+}
+
+.text-app-main {
+  color: var(--text-main);
+}
+
+.text-app-sub {
+  color: var(--text-sub);
+}
+
+.text-app-muted {
+  color: var(--text-muted);
+}
+
+.border-app {
+  border-color: var(--border-color);
+}
+
+.border-app-subtle {
+  border-color: var(--border-subtle-color);
+}
+
+.bg-app-modal {
+  background-color: var(--modal-bg);
+}
+
+.bg-app-input {
+  background-color: var(--input-bg);
+}
+
+.bg-app-header {
+  background-color: var(--header-bg);
+}
+
+.bg-app-tabbar {
+  background-color: var(--tabbar-bg);
+}
+
+/* Nothing OS inspired dot-matrix grid background */
+.bg-dots {
+  background-image: radial-gradient(var(--dot-color) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.bg-dots-dense {
+  background-image: radial-gradient(var(--dot-color) 1px, transparent 1px);
+  background-size: 8px 8px;
+}
+
+/* Hide scrollbar for clean minimal look */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
