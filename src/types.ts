@@ -9,7 +9,7 @@ export type SyncStatus = 'synced' | 'pending' | 'failed';
 
 export type AppSyncState = 'synced' | 'syncing' | 'offline' | 'error';
 
-export type TimeFilterPeriod = 'week' | 'month' | 'year' | 'all';
+export type TimeFilterPeriod = 'month' | 'year' | 'all';
 
 export type ThemeMode = 'dark' | 'black' | 'light';
 

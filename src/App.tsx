@@ -10,8 +10,8 @@ import { ReportsTab } from './components/ReportsTab.tsx';
 import { BottomTabBar } from './components/BottomTabBar.tsx';
 import { AddTransactionModal } from './components/AddTransactionModal.tsx';
 import { DataTransferModal } from './components/DataTransferModal.tsx';
-import { ExportMobileAppModal } from './components/ExportMobileAppModal.tsx';
 import { UnifiedMenuModal } from './components/UnifiedMenuModal.tsx';
+import { LoginScreen } from './components/LoginScreen.tsx';
 import {
   AppSyncState,
   ThemeMode,
@@ -33,11 +33,13 @@ import {
 import { syncManager } from './services/syncManager.ts';
 import { firebaseSyncService } from './services/firebaseSync.ts';
 
+const GUEST_DISMISSED_KEY = 'stonks_guest_session_dismissed_v1';
+
 export default function App() {
   // Navigation: 'history' (Movimenti) or 'reports' (Report & Analisi)
   const [activeView, setActiveView] = useState<'history' | 'reports'>('history');
 
-  // Filter period in Reports: 'week' | 'month' | 'year' | 'all'
+  // Filter period in Reports: 'month' | 'year' | 'all' (Settimana removed)
   const [currentPeriod, setCurrentPeriod] = useState<TimeFilterPeriod>('month');
 
   // Theme: 'dark' | 'black' | 'light'
@@ -46,8 +48,12 @@ export default function App() {
   // Stored transactions state
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
-  // User profile state
+  // User profile state & auth gate
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [authInitialized, setAuthInitialized] = useState<boolean>(false);
+  const [guestMode, setGuestMode] = useState<boolean>(() => {
+    return localStorage.getItem(GUEST_DISMISSED_KEY) === 'true';
+  });
 
   // Sync state
   const [syncState, setSyncState] = useState<AppSyncState>('synced');
@@ -59,7 +65,6 @@ export default function App() {
   const [addModalInitialType, setAddModalInitialType] = useState<TransactionType>('expense');
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const [isDataTransferModalOpen, setIsDataTransferModalOpen] = useState<boolean>(false);
-  const [isMobileExportModalOpen, setIsMobileExportModalOpen] = useState<boolean>(false);
 
   // Apply theme class to document body & update theme-color meta
   useEffect(() => {
@@ -101,6 +106,7 @@ export default function App() {
     // 2. Firebase Auth & Sync subscriptions
     const unsubAuth = firebaseSyncService.subscribeAuth((u) => {
       setUser(u);
+      setAuthInitialized(true);
     });
 
     const unsubFirebaseSync = firebaseSyncService.subscribeSync((fStatus) => {
@@ -197,7 +203,7 @@ export default function App() {
     firebaseSyncService.deleteTransaction(id).catch(console.warn);
   };
 
-  // Batch import transactions (CSV or JSON)
+  // Batch import transactions (CSV, JSON, or Google Sheets)
   const handleBatchImport = async (imported: Transaction[]) => {
     const existing = getStoredTransactions();
     const existingIds = new Set(existing.map((t) => t.id));
@@ -207,8 +213,8 @@ export default function App() {
     saveTransactionsList(combined);
     setTransactions(combined);
 
-    // Sync imported records to Firestore
-    if (newItems.length > 0) {
+    // Sync imported records to Firestore if logged in
+    if (newItems.length > 0 && user) {
       await firebaseSyncService.batchImport(newItems);
     }
   };
@@ -230,6 +236,8 @@ export default function App() {
   const handleLogout = async () => {
     try {
       await firebaseSyncService.logout();
+      setGuestMode(false);
+      localStorage.removeItem(GUEST_DISMISSED_KEY);
     } catch (e) {
       console.warn('Logout failed:', e);
     }
@@ -240,6 +248,23 @@ export default function App() {
     setTransactions([]);
   };
 
+  const handleContinueAsGuest = () => {
+    setGuestMode(true);
+    localStorage.setItem(GUEST_DISMISSED_KEY, 'true');
+  };
+
+  // Show Login Screen if no user is signed in and user hasn't explicitly chosen guest mode
+  if (authInitialized && !user && !guestMode) {
+    return (
+      <LoginScreen
+        onSuccess={(newUser) => {
+          setUser(newUser);
+        }}
+        onContinueAsGuest={handleContinueAsGuest}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-app-canvas text-app-main flex flex-col justify-between selection:bg-red-600 selection:text-white pb-24 transition-colors">
       {/* Background Subtle Dot Pattern (Nothing OS aesthetic) */}
@@ -247,7 +272,7 @@ export default function App() {
 
       {/* Main Container */}
       <div className="relative z-10 w-full flex-1 flex flex-col">
-        {/* Clean Header: Contains only branding and a single sleek unified button */}
+        {/* Clean Header: Contains branding and a single sleek unified button */}
         <Header
           syncState={syncState}
           pendingCount={pendingCount}
@@ -266,12 +291,13 @@ export default function App() {
             />
           )}
 
-          {/* Section B: Reports Tab (Includes full period selector & analytical charts) */}
+          {/* Section B: Reports Tab (Settimana filter removed, view all expenses by month/year with edit) */}
           {activeView === 'reports' && (
             <ReportsTab
               transactions={transactions}
               currentPeriod={currentPeriod}
               onPeriodChange={setCurrentPeriod}
+              onEditTransaction={handleOpenEdit}
             />
           )}
         </main>
@@ -308,25 +334,22 @@ export default function App() {
         pendingCount={pendingCount}
         onManualSync={() => syncManager.checkNetworkAndSync()}
         user={user}
-        onLogin={handleLogin}
+        onLogin={() => {
+          setIsUnifiedMenuOpen(false);
+          setGuestMode(false);
+          localStorage.removeItem(GUEST_DISMISSED_KEY);
+        }}
         onLogout={handleLogout}
         onOpenDataTransfer={() => setIsDataTransferModalOpen(true)}
-        onOpenMobileExport={() => setIsMobileExportModalOpen(true)}
         onClearData={handleClearAllData}
       />
 
-      {/* Modal 3: Import / Export CSV & JSON Data */}
+      {/* Modal 3: Import / Export CSV, JSON Data & Google Sheets */}
       <DataTransferModal
         isOpen={isDataTransferModalOpen}
         onClose={() => setIsDataTransferModalOpen(false)}
         transactions={transactions}
         onImportTransactions={handleBatchImport}
-      />
-
-      {/* Modal 4: Export Project for Android Studio & Apple iOS with Safe-Area support */}
-      <ExportMobileAppModal
-        isOpen={isMobileExportModalOpen}
-        onClose={() => setIsMobileExportModalOpen(false)}
       />
     </div>
   );

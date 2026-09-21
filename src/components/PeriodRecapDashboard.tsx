@@ -64,7 +64,6 @@ export const PeriodRecapDashboard: React.FC<PeriodRecapDashboardProps> = ({
   const count = filtered.length;
 
   const periods: { key: TimeFilterPeriod; label: string; sub: string }[] = [
-    { key: 'week', label: 'Settimana', sub: '7 gg' },
     { key: 'month', label: 'Mese', sub: 'Corrente' },
     { key: 'year', label: 'Anno', sub: String(now.getFullYear()) },
     { key: 'all', label: 'Tutto', sub: 'Globale' },

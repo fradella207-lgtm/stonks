@@ -19,6 +19,9 @@ import {
   signOut as fbSignOut,
   signInAnonymously,
   onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
   User,
 } from 'firebase/auth';
 import { auth, db, googleProvider } from './firebase.ts';
@@ -153,6 +156,61 @@ class FirebaseSyncService {
       return profile;
     } catch (err: any) {
       console.error('Login error:', err);
+      this.notifySync('error');
+      throw err;
+    }
+  }
+
+  // Register with Email & Password (prevents duplicate emails via Firebase Auth)
+  public async registerWithEmail(email: string, pass: string, name?: string): Promise<UserProfile> {
+    try {
+      this.notifySync('syncing');
+      const res = await createUserWithEmailAndPassword(auth, email, pass);
+      const u = res.user;
+
+      if (name && u) {
+        await updateProfile(u, { displayName: name });
+      }
+
+      const profile: UserProfile = {
+        uid: u.uid,
+        email: u.email,
+        displayName: name || u.email?.split('@')[0] || 'Utente',
+        photoURL: u.photoURL,
+      };
+      this.currentUser = profile;
+      this.notifyAuth();
+
+      await this.pushLocalToFirestoreIfEmpty(u.uid);
+      this.notifySync('synced');
+      return profile;
+    } catch (err: any) {
+      console.error('Email registration error:', err);
+      this.notifySync('error');
+      throw err;
+    }
+  }
+
+  // Login with Email & Password
+  public async loginWithEmail(email: string, pass: string): Promise<UserProfile> {
+    try {
+      this.notifySync('syncing');
+      const res = await signInWithEmailAndPassword(auth, email, pass);
+      const u = res.user;
+      const profile: UserProfile = {
+        uid: u.uid,
+        email: u.email,
+        displayName: u.displayName || u.email?.split('@')[0] || 'Utente',
+        photoURL: u.photoURL,
+      };
+      this.currentUser = profile;
+      this.notifyAuth();
+
+      await this.pushLocalToFirestoreIfEmpty(u.uid);
+      this.notifySync('synced');
+      return profile;
+    } catch (err: any) {
+      console.error('Email login error:', err);
       this.notifySync('error');
       throw err;
     }

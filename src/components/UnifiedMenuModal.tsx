@@ -37,7 +37,6 @@ interface UnifiedMenuModalProps {
   onLogin: () => void;
   onLogout: () => void;
   onOpenDataTransfer: () => void;
-  onOpenMobileExport: () => void;
   onClearData: () => void;
 }
 
@@ -53,7 +52,6 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
   onLogin,
   onLogout,
   onOpenDataTransfer,
-  onOpenMobileExport,
   onClearData,
 }) => {
   const [confirmClear, setConfirmClear] = useState(false);
@@ -268,45 +266,11 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
             </div>
           </div>
 
-          {/* 3. Export Mobile App: Android Studio & Apple Devices */}
-          <div className="space-y-2">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-app-muted flex items-center gap-1.5">
-              <Smartphone className="w-3.5 h-3.5 text-app-muted" />
-              <span>Esporta per Android Studio & Apple iOS</span>
-            </div>
-
-            <button
-              onClick={() => {
-                onClose();
-                onOpenMobileExport();
-              }}
-              className="w-full p-3 rounded-2xl bg-app-subtle hover:bg-app-hover border border-app flex items-center justify-between transition-colors cursor-pointer text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                  <Smartphone className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-app-main flex items-center gap-1.5">
-                    <span>Scarica Progetto Android Studio / Apple</span>
-                    <span className="px-1.5 py-0.2 rounded bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-[8px]">
-                      Safe-Area OK
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-app-muted">
-                    Pacchetto ZIP con Kotlin, Gradle, status bar protetta e guida Apple PWA
-                  </div>
-                </div>
-              </div>
-              <ExternalLink className="w-4 h-4 text-app-muted" />
-            </button>
-          </div>
-
-          {/* 4. Import / Export Data (CSV, JSON) */}
+          {/* 3. Import / Export Data (CSV, JSON, Google Sheets) */}
           <div className="space-y-2">
             <div className="text-[10px] font-bold uppercase tracking-wider text-app-muted flex items-center gap-1.5">
               <FileSpreadsheet className="w-3.5 h-3.5 text-app-muted" />
-              <span>Gestione Dati, Backup & Fogli di Calcolo</span>
+              <span>Gestione Dati, Fogli Google & Backup</span>
             </div>
 
             <button
@@ -318,14 +282,17 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
             >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-app-card border border-app flex items-center justify-center text-app-main">
-                  <FileSpreadsheet className="w-4 h-4 text-amber-500" />
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-app-main">
-                    Importa / Esporta CSV & JSON
+                  <div className="text-xs font-bold text-app-main flex items-center gap-1.5">
+                    <span>Importa ed Esporta Dati</span>
+                    <span className="px-1.5 py-0.2 rounded bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-[8px]">
+                      Google Fogli
+                    </span>
                   </div>
                   <div className="text-[10px] text-app-muted">
-                    Compatibile con Excel, Fogli Google e backup offline
+                    Salva su Google Fogli, scarica CSV/JSON o ripristina vecchi dati
                   </div>
                 </div>
               </div>

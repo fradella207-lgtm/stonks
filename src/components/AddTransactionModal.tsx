@@ -15,8 +15,10 @@ import {
   Image as ImageIcon,
   Trash2,
   Check,
+  Plus,
 } from 'lucide-react';
 import { Transaction, TransactionType } from '../types.ts';
+import { getStoredCustomCategories, saveStoredCustomCategories } from '../services/storage.ts';
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -35,28 +37,6 @@ interface AddTransactionModalProps {
   }) => void;
   onDelete?: (id: string) => void;
 }
-
-const EXPENSE_CATEGORIES = [
-  'Spesa',
-  'Ristorante',
-  'Trasporti',
-  'Casa',
-  'Bollette',
-  'Svago',
-  'Salute',
-  'Shopping',
-  'Altro',
-];
-
-const INCOME_CATEGORIES = [
-  'Stipendio',
-  'Bonifico',
-  'Investimenti',
-  'Rimborso',
-  'Vendita',
-  'Bonus',
-  'Altro',
-];
 
 export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   isOpen,
@@ -77,10 +57,22 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Dynamic custom categories
+  const [categoriesMap, setCategoriesMap] = useState<{ expense: string[]; income: string[] }>(() =>
+    getStoredCustomCategories()
+  );
+  const [isAddingCategory, setIsAddingCategory] = useState<boolean>(false);
+  const [newCategoryInput, setNewCategoryInput] = useState<string>('');
+
   // Sync fields when opening or editing
   useEffect(() => {
     if (isOpen) {
       setConfirmDelete(false);
+      setIsAddingCategory(false);
+      setNewCategoryInput('');
+      const loadedCategories = getStoredCustomCategories();
+      setCategoriesMap(loadedCategories);
+
       if (transactionToEdit) {
         setType(transactionToEdit.type);
         setAmountStr(String(transactionToEdit.amount));
@@ -90,11 +82,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setLocation(transactionToEdit.location || '');
         setReceiptImage(transactionToEdit.receiptImage || '');
       } else {
+        // Enforce strictly the chosen type without toggling to the other
         setType(initialType);
         setAmountStr('');
         setDescription('');
         setDate(todayIso);
-        setCategory(initialType === 'expense' ? 'Spesa' : 'Stipendio');
+        const defaultList = initialType === 'expense' ? loadedCategories.expense : loadedCategories.income;
+        setCategory(defaultList[0] || 'Altro');
         setLocation('');
         setReceiptImage('');
       }
@@ -104,7 +98,34 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   if (!isOpen) return null;
 
   const isEditing = !!transactionToEdit;
-  const currentCategories = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+  const isIncome = type === 'income';
+  const currentCategories = isIncome ? categoriesMap.income : categoriesMap.expense;
+
+  const handleAddNewCategory = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = newCategoryInput.trim();
+    if (!trimmed) {
+      setIsAddingCategory(false);
+      return;
+    }
+
+    const targetKey = isIncome ? 'income' : 'expense';
+    const exists = currentCategories.some((c) => c.toLowerCase() === trimmed.toLowerCase());
+    if (!exists) {
+      const updated = {
+        ...categoriesMap,
+        [targetKey]: [...categoriesMap[targetKey], trimmed],
+      };
+      setCategoriesMap(updated);
+      saveStoredCustomCategories(updated);
+      setCategory(trimmed);
+    } else {
+      setCategory(trimmed);
+    }
+
+    setNewCategoryInput('');
+    setIsAddingCategory(false);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,7 +136,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       id: transactionToEdit?.id,
       type,
       amount: cleanAmount,
-      description: description.trim() || (type === 'expense' ? 'Uscita' : 'Entrata'),
+      description: description.trim() || (isIncome ? 'Entrata' : 'Uscita'),
       date: date || todayIso,
       category: category.trim() || 'Altro',
       location: location.trim() || undefined,
@@ -149,8 +170,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     reader.readAsDataURL(file);
   };
 
-  const isIncome = type === 'income';
-
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
       <div className="w-full max-w-lg bg-app-modal border border-app rounded-t-[32px] sm:rounded-[32px] shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-app-main">
@@ -170,7 +189,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               }`}
             />
             <h2 className="text-xs font-mono-code font-bold uppercase tracking-widest text-app-main">
-              {isEditing ? 'MODIFICA MOVIMENTO // STONKS' : 'REGISTRA MOVIMENTO // STONKS'}
+              {isEditing
+                ? `MODIFICA ${isIncome ? 'ENTRATA' : 'USCITA'} // STONKS`
+                : `REGISTRA ${isIncome ? 'ENTRATA' : 'USCITA'} // STONKS`}
             </h2>
           </div>
           <button
@@ -183,39 +204,34 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-4 no-scrollbar">
-          {/* Type Switcher: Entrata vs Uscita */}
-          <div className="grid grid-cols-2 gap-2 p-1 bg-app-subtle rounded-2xl border border-app">
-            <button
-              type="button"
-              onClick={() => {
-                setType('expense');
-                if (!isEditing) setCategory('Spesa');
-              }}
-              className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-mono-code transition-all cursor-pointer ${
-                !isIncome
-                  ? 'bg-red-600 text-white font-bold shadow-md'
-                  : 'text-app-muted hover:text-app-main'
-              }`}
-            >
-              <ArrowDownRight className="w-4 h-4" />
-              <span>USCITA (-)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setType('income');
-                if (!isEditing) setCategory('Stipendio');
-              }}
-              className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-mono-code transition-all cursor-pointer ${
-                isIncome
-                  ? 'bg-emerald-600 text-white font-bold shadow-md'
-                  : 'text-app-muted hover:text-app-main'
-              }`}
-            >
-              <ArrowUpRight className="w-4 h-4" />
-              <span>ENTRATA (+)</span>
-            </button>
+          {/* Badge Tipo: Shows ONLY the selected type to avoid duplicate/confusing toggles */}
+          <div
+            className={`p-3 rounded-2xl border flex items-center justify-between transition-colors ${
+              isIncome
+                ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400'
+                : 'bg-red-950/20 border-red-500/30 text-red-400'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <div
+                className={`w-7 h-7 rounded-xl flex items-center justify-center ${
+                  isIncome ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+                }`}
+              >
+                {isIncome ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+              </div>
+              <div>
+                <div className="text-[11px] font-mono-code font-bold uppercase tracking-wider">
+                  {isIncome ? 'REGISTRAZIONE ENTRATA' : 'REGISTRAZIONE USCITA'}
+                </div>
+                <div className="text-[9px] text-app-muted font-mono-code">
+                  {isIncome ? 'Incrementa il saldo disponibile' : 'Detrae dal budget del periodo'}
+                </div>
+              </div>
+            </div>
+            <span className="font-mono-code text-xs font-bold px-2 py-0.5 rounded-full bg-app-card border border-app">
+              {isIncome ? '+ ENTRATA' : '- USCITA'}
+            </span>
           </div>
 
           {/* Amount Input with Currency Symbol */}
@@ -245,7 +261,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     setAmountStr(val);
                   }
                 }}
-                className="w-full bg-app-input border border-app rounded-2xl pl-12 pr-4 py-3 text-3xl font-mono-code font-bold text-app-main placeholder:text-app-muted/40 outline-none focus:border-red-500 transition-colors"
+                className={`w-full bg-app-input border border-app rounded-2xl pl-12 pr-4 py-3 text-3xl font-mono-code font-bold text-app-main placeholder:text-app-muted/40 outline-none transition-colors ${
+                  isIncome ? 'focus:border-emerald-500' : 'focus:border-red-500'
+                }`}
               />
             </div>
 
@@ -272,14 +290,16 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <input
               type="text"
               required
-              placeholder={isIncome ? 'es. Stipendio, Rimborso spese...' : 'es. Spesa supermercato, Pranzo bar...'}
+              placeholder={isIncome ? 'es. Stipendio mensile, Bonifico...' : 'es. Spesa supermercato, Pranzo...'}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-app-input border border-app rounded-2xl px-4 py-2.5 text-xs font-mono-code text-app-main placeholder:text-app-muted/50 outline-none focus:border-red-500 transition-colors"
+              className={`w-full bg-app-input border border-app rounded-2xl px-4 py-2.5 text-xs font-mono-code text-app-main placeholder:text-app-muted/50 outline-none transition-colors ${
+                isIncome ? 'focus:border-emerald-500' : 'focus:border-red-500'
+              }`}
             />
           </div>
 
-          {/* Category Quick Chips */}
+          {/* Category Section with Custom Category Creation */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted flex items-center gap-1">
@@ -291,7 +311,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               </span>
             </div>
 
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5 items-center">
               {currentCategories.map((cat) => {
                 const isSelected = category.toLowerCase() === cat.toLowerCase();
                 return (
@@ -311,6 +331,51 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   </button>
                 );
               })}
+
+              {/* Add Custom Category Inline Button */}
+              {isAddingCategory ? (
+                <div className="flex items-center gap-1 bg-app-input border border-app rounded-xl px-2 py-0.5">
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Nuova categoria"
+                    value={newCategoryInput}
+                    onChange={(e) => setNewCategoryInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddNewCategory();
+                      } else if (e.key === 'Escape') {
+                        setIsAddingCategory(false);
+                      }
+                    }}
+                    className="w-24 text-[11px] font-mono-code bg-transparent outline-none text-app-main placeholder:text-app-muted/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddNewCategory()}
+                    className="p-1 text-emerald-400 hover:text-emerald-300 cursor-pointer"
+                  >
+                    <Check className="w-3 h-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingCategory(false)}
+                    className="p-1 text-app-muted hover:text-app-main cursor-pointer"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsAddingCategory(true)}
+                  className="px-2.5 py-1 rounded-xl text-[11px] font-mono-code border border-dashed border-app hover:border-app-hover bg-app-card hover:bg-app-hover text-app-muted hover:text-app-main transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Aggiungi</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -327,7 +392,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-app-input border border-app rounded-2xl px-3 py-2 text-xs font-mono-code text-app-main outline-none focus:border-red-500 transition-colors"
+                className={`w-full bg-app-input border border-app rounded-2xl px-3 py-2 text-xs font-mono-code text-app-main outline-none transition-colors ${
+                  isIncome ? 'focus:border-emerald-500' : 'focus:border-red-500'
+                }`}
               />
             </div>
 
@@ -342,7 +409,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 placeholder="es. Milano, Esselunga"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className="w-full bg-app-input border border-app rounded-2xl px-3 py-2 text-xs font-mono-code text-app-main placeholder:text-app-muted/50 outline-none focus:border-red-500 transition-colors"
+                className={`w-full bg-app-input border border-app rounded-2xl px-3 py-2 text-xs font-mono-code text-app-main placeholder:text-app-muted/50 outline-none transition-colors ${
+                  isIncome ? 'focus:border-emerald-500' : 'focus:border-red-500'
+                }`}
               />
             </div>
           </div>
@@ -406,7 +475,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               }`}
             >
               <Check className="w-4 h-4" />
-              <span>{isEditing ? 'Salva Modifiche' : 'Registra Movimento'}</span>
+              <span>{isEditing ? 'Salva Modifiche' : `Registra ${isIncome ? 'Entrata' : 'Uscita'}`}</span>
             </button>
 
             {/* If editing, allow deleting from here as well */}

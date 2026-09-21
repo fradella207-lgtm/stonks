@@ -11,6 +11,7 @@ const STORAGE_KEYS = {
   QUEUE: 'stonks_sync_queue_v2',
   CONFIG: 'stonks_config_v2',
   THEME: 'stonks_theme_mode',
+  CUSTOM_CATEGORIES: 'stonks_custom_categories_v1',
 };
 
 // Generate a valid UUID v4 fallback
@@ -337,6 +338,29 @@ export function getStoredTheme(): ThemeMode {
 export function saveStoredTheme(theme: ThemeMode): void {
   try {
     localStorage.setItem(STORAGE_KEYS.THEME, theme);
+  } catch {}
+}
+
+// Custom categories storage
+export function getStoredCustomCategories(): { expense: string[]; income: string[] } {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.CUSTOM_CATEGORIES);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.expense) && Array.isArray(parsed.income)) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return {
+    expense: ['Spesa', 'Ristorante', 'Trasporti', 'Casa', 'Bollette', 'Svago', 'Salute', 'Shopping', 'Altro'],
+    income: ['Stipendio', 'Bonifico', 'Investimenti', 'Rimborso', 'Vendita', 'Bonus', 'Altro'],
+  };
+}
+
+export function saveStoredCustomCategories(cats: { expense: string[]; income: string[] }): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.CUSTOM_CATEGORIES, JSON.stringify(cats));
   } catch {}
 }
 
