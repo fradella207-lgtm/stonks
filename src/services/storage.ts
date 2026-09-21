@@ -166,20 +166,9 @@ export function updateTransactionLocal(updatedTx: Transaction): Transaction {
 // Read all stored transactions
 export function getStoredTransactions(): Transaction[] {
   try {
-    let raw = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+    const raw = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
     if (!raw) {
-      // Check if old data from previous version exists
-      const legacy = localStorage.getItem(STORAGE_KEYS.LEGACY_TRANSACTIONS);
-      if (legacy) {
-        raw = legacy;
-        localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, legacy);
-      }
-    }
-
-    if (!raw) {
-      const seed = getInitialSeedData();
-      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(seed));
-      return seed;
+      return [];
     }
 
     const parsed = JSON.parse(raw);

@@ -12,6 +12,7 @@ import { AddTransactionModal } from './components/AddTransactionModal.tsx';
 import { DataTransferModal } from './components/DataTransferModal.tsx';
 import { UnifiedMenuModal } from './components/UnifiedMenuModal.tsx';
 import { LoginScreen } from './components/LoginScreen.tsx';
+import { WelcomeImportBanner } from './components/WelcomeImportBanner.tsx';
 import {
   AppSyncState,
   ThemeMode,
@@ -33,8 +34,6 @@ import {
 import { syncManager } from './services/syncManager.ts';
 import { firebaseSyncService } from './services/firebaseSync.ts';
 
-const GUEST_DISMISSED_KEY = 'stonks_guest_session_dismissed_v1';
-
 export default function App() {
   // Navigation: 'history' (Movimenti) or 'reports' (Report & Analisi)
   const [activeView, setActiveView] = useState<'history' | 'reports'>('history');
@@ -51,8 +50,8 @@ export default function App() {
   // User profile state & auth gate
   const [user, setUser] = useState<UserProfile | null>(null);
   const [authInitialized, setAuthInitialized] = useState<boolean>(false);
-  const [guestMode, setGuestMode] = useState<boolean>(() => {
-    return localStorage.getItem(GUEST_DISMISSED_KEY) === 'true';
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState<boolean>(() => {
+    return localStorage.getItem('stonks_new_account_welcome_banner') === 'true';
   });
 
   // Sync state
@@ -103,33 +102,13 @@ export default function App() {
     const local = getStoredTransactions();
     setTransactions(local);
 
-    // Check for stored local profile if in guest mode
-    const storedGuestProfile = localStorage.getItem('stonks_local_profile_v1');
-    if (storedGuestProfile && !user) {
-      try {
-        setUser(JSON.parse(storedGuestProfile));
-      } catch (e) {
-        console.warn('Failed to parse local profile:', e);
-      }
-    }
-
     // 2. Firebase Auth & Sync subscriptions
     const unsubAuth = firebaseSyncService.subscribeAuth((u) => {
-      if (u) {
-        setUser(u);
-      } else {
-        const localProf = localStorage.getItem('stonks_local_profile_v1');
-        if (localProf) {
-          try {
-            setUser(JSON.parse(localProf));
-          } catch (e) {
-            setUser(null);
-          }
-        } else {
-          setUser(null);
-        }
-      }
+      setUser(u);
       setAuthInitialized(true);
+      if (localStorage.getItem('stonks_new_account_welcome_banner') === 'true') {
+        setShowWelcomeBanner(true);
+      }
     });
 
     const unsubFirebaseSync = firebaseSyncService.subscribeSync((fStatus) => {
@@ -259,9 +238,7 @@ export default function App() {
   const handleLogout = async () => {
     try {
       await firebaseSyncService.logout();
-      setGuestMode(false);
       setUser(null);
-      localStorage.removeItem(GUEST_DISMISSED_KEY);
       localStorage.removeItem('stonks_local_profile_v1');
     } catch (e) {
       console.warn('Logout failed:', e);
@@ -273,29 +250,26 @@ export default function App() {
     setTransactions([]);
   };
 
-  const handleContinueAsGuest = (nickname?: string) => {
-    setGuestMode(true);
-    localStorage.setItem(GUEST_DISMISSED_KEY, 'true');
-    if (nickname && nickname.trim()) {
-      const localUser: UserProfile = {
-        uid: 'local_' + Date.now(),
-        email: null,
-        displayName: nickname.trim(),
-        photoURL: null,
-      };
-      setUser(localUser);
-      localStorage.setItem('stonks_local_profile_v1', JSON.stringify(localUser));
-    }
+  const handleDismissWelcomeBanner = () => {
+    localStorage.removeItem('stonks_new_account_welcome_banner');
+    setShowWelcomeBanner(false);
   };
 
-  // Show Login Screen if no user is signed in and user hasn't explicitly chosen guest mode
-  if (authInitialized && !user && !guestMode) {
+  const handleOpenImportFromBanner = () => {
+    handleDismissWelcomeBanner();
+    setIsDataTransferModalOpen(true);
+  };
+
+  // Show Login Screen if no user is signed in
+  if (authInitialized && !user) {
     return (
       <LoginScreen
         onSuccess={(newUser) => {
           setUser(newUser);
+          if (localStorage.getItem('stonks_new_account_welcome_banner') === 'true') {
+            setShowWelcomeBanner(true);
+          }
         }}
-        onContinueAsGuest={handleContinueAsGuest}
       />
     );
   }
@@ -316,6 +290,14 @@ export default function App() {
         />
 
         <main className="w-full max-w-xl mx-auto px-4 pt-3.5 space-y-4 flex-1">
+          {/* Welcome Import Banner for new accounts or users wishing to migrate old data */}
+          {showWelcomeBanner && (
+            <WelcomeImportBanner
+              onOpenImport={handleOpenImportFromBanner}
+              onDismiss={handleDismissWelcomeBanner}
+            />
+          )}
+
           {/* Section A: Movimenti Tab (Includes fixed weekly recap on top & transaction feed with edit) */}
           {activeView === 'history' && (
             <HistoryTab
@@ -371,8 +353,6 @@ export default function App() {
         user={user}
         onLogin={() => {
           setIsUnifiedMenuOpen(false);
-          setGuestMode(false);
-          localStorage.removeItem(GUEST_DISMISSED_KEY);
         }}
         onLogout={handleLogout}
         onOpenDataTransfer={() => setIsDataTransferModalOpen(true)}

@@ -76,7 +76,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
   return (
     <div id="tab-history" className="w-full space-y-4">
       {/* 1. Fixed Weekly Recap directly in Movimenti as requested */}
-      <WeeklyRecapCard transactions={transactions} />
+      <WeeklyRecapCard transactions={transactions} onOpenAdd={onOpenAdd} />
 
       {/* 2. Feed Header with Search Bar & Type Filters */}
       <div className="space-y-2.5 pt-1">

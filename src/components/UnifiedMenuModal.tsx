@@ -22,6 +22,8 @@ import {
   Trash2,
   ShieldCheck,
   ExternalLink,
+  AlertCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import { AppSyncState, ThemeMode, UserProfile } from '../types.ts';
 
@@ -54,7 +56,7 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
   onOpenDataTransfer,
   onClearData,
 }) => {
-  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearStep, setClearStep] = useState<0 | 1 | 2>(0);
 
   if (!isOpen) return null;
 
@@ -300,39 +302,71 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
             </button>
           </div>
 
-          {/* 5. Clear Local Data */}
+          {/* 5. Clear Local Data (2-Step Double Confirmation) */}
           <div className="pt-2 border-t border-app-subtle">
-            {confirmClear ? (
-              <div className="p-3 rounded-2xl bg-red-950/20 border border-red-500/30 space-y-2">
-                <p className="text-[11px] text-red-400">
-                  Vuoi davvero eliminare tutti i movimenti memorizzati sul dispositivo?
+            {clearStep === 1 && (
+              <div className="p-3.5 rounded-2xl bg-amber-950/20 border border-amber-500/40 space-y-2.5 font-mono-code">
+                <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs uppercase tracking-wider">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>Passaggio 1 di 2: Richiesta Eliminazione</span>
+                </div>
+                <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                  Vuoi avviare la cancellazione dei dati salvati su questo dispositivo? Se hai cliccato per sbaglio, premi Annulla.
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pt-1">
                   <button
-                    onClick={() => {
-                      onClearData();
-                      setConfirmClear(false);
-                      onClose();
-                    }}
-                    className="flex-1 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-colors cursor-pointer"
+                    onClick={() => setClearStep(2)}
+                    className="flex-1 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition-colors cursor-pointer"
                   >
-                    Sì, Cancella Dati
+                    Continua alla Conferma (1/2) &rarr;
                   </button>
                   <button
-                    onClick={() => setConfirmClear(false)}
-                    className="px-3 py-1.5 rounded-xl bg-app-card border border-app text-app-muted text-xs cursor-pointer"
+                    onClick={() => setClearStep(0)}
+                    className="px-3 py-2 rounded-xl bg-app-card border border-app text-app-muted hover:text-app-main text-xs cursor-pointer"
                   >
                     Annulla
                   </button>
                 </div>
               </div>
-            ) : (
+            )}
+
+            {clearStep === 2 && (
+              <div className="p-3.5 rounded-2xl bg-red-950/30 border border-red-500/60 space-y-2.5 font-mono-code">
+                <div className="flex items-center gap-1.5 text-red-400 font-bold text-xs uppercase tracking-wider">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-red-500" />
+                  <span>Passaggio 2 di 2: Conferma Definitiva</span>
+                </div>
+                <p className="text-[11px] text-red-200 leading-relaxed">
+                  <strong>Attenzione:</strong> Questa operazione cancellerà permanentemente tutti i movimenti dal dispositivo. Sei assolutamente sicuro al 100%?
+                </p>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={() => {
+                      onClearData();
+                      setClearStep(0);
+                      onClose();
+                    }}
+                    className="flex-1 py-2 px-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-colors cursor-pointer shadow-lg shadow-red-950"
+                  >
+                    Sì, Cancella Tutto Definitivamente (2/2)
+                  </button>
+                  <button
+                    onClick={() => setClearStep(0)}
+                    className="px-3 py-2 rounded-xl bg-app-card border border-app text-app-muted hover:text-app-main text-xs cursor-pointer"
+                  >
+                    Annulla
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {clearStep === 0 && (
               <button
-                onClick={() => setConfirmClear(true)}
-                className="w-full py-2 px-3 rounded-xl text-app-muted hover:text-red-500 hover:bg-red-950/20 text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                onClick={() => setClearStep(1)}
+                className="w-full py-2 px-3 rounded-xl text-app-muted hover:text-red-500 hover:bg-red-950/20 text-[11px] font-mono-code flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Azzera Dati Locali</span>
+                <span>Azzera Dati Locali (Doppia Conferma)</span>
               </button>
             )}
           </div>

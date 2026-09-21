@@ -22,6 +22,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
+  getAdditionalUserInfo,
   User,
 } from 'firebase/auth';
 import { auth, db, googleProvider } from './firebase.ts';
@@ -141,6 +142,8 @@ class FirebaseSyncService {
       this.notifySync('syncing');
       const res = await signInWithPopup(auth, googleProvider);
       const u = res.user;
+      const isNewUser = getAdditionalUserInfo(res)?.isNewUser ?? false;
+
       const profile: UserProfile = {
         uid: u.uid,
         email: u.email,
@@ -150,8 +153,13 @@ class FirebaseSyncService {
       this.currentUser = profile;
       this.notifyAuth();
 
-      // Migrate existing local transactions to Firestore if remote is empty
-      await this.pushLocalToFirestoreIfEmpty(u.uid);
+      if (isNewUser) {
+        // A brand new account starts completely clean without any dummy data
+        saveTransactionsList([]);
+        localStorage.setItem('stonks_new_account_welcome_banner', 'true');
+      }
+
+      this.subscribeToUserFirestore(u.uid);
       this.notifySync('synced');
       return profile;
     } catch (err: any) {
@@ -181,7 +189,11 @@ class FirebaseSyncService {
       this.currentUser = profile;
       this.notifyAuth();
 
-      await this.pushLocalToFirestoreIfEmpty(u.uid);
+      // Newly registered accounts start completely empty with 0 transactions
+      saveTransactionsList([]);
+      localStorage.setItem('stonks_new_account_welcome_banner', 'true');
+
+      this.subscribeToUserFirestore(u.uid);
       this.notifySync('synced');
       return profile;
     } catch (err: any) {
@@ -206,7 +218,7 @@ class FirebaseSyncService {
       this.currentUser = profile;
       this.notifyAuth();
 
-      await this.pushLocalToFirestoreIfEmpty(u.uid);
+      this.subscribeToUserFirestore(u.uid);
       this.notifySync('synced');
       return profile;
     } catch (err: any) {
@@ -283,9 +295,8 @@ class FirebaseSyncService {
             });
           });
 
-          if (remoteList.length > 0) {
-            saveTransactionsList(remoteList);
-          }
+          // Update local cache with remote transactions
+          saveTransactionsList(remoteList);
           this.notifySync('synced');
         },
         (error) => {

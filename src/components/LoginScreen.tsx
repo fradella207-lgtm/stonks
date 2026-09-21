@@ -23,12 +23,10 @@ import { UserProfile } from '../types.ts';
 
 interface LoginScreenProps {
   onSuccess: (user: UserProfile) => void;
-  onContinueAsGuest: (nickname?: string) => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
   onSuccess,
-  onContinueAsGuest,
 }) => {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [email, setEmail] = useState('');
@@ -373,32 +371,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             </svg>
             <span>Continua con account Google</span>
           </button>
-
-          {/* Continue Offline/Guest button with instant unblock */}
-          <div className="pt-2 border-t border-app-subtle/60">
-            <button
-              type="button"
-              onClick={() => onContinueAsGuest(displayName.trim() || undefined)}
-              className="w-full py-2.5 px-3 rounded-2xl bg-app-subtle hover:bg-app-hover border border-app text-app-sub hover:text-app-main font-mono-code text-xs transition-colors cursor-pointer flex items-center justify-between group"
-            >
-              <div className="text-left">
-                <div className="font-bold text-app-main text-[11px] flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Usa subito in modalità locale</span>
-                </div>
-                <div className="text-[9px] text-app-muted">
-                  Funziona al 100% offline senza attendere Firebase
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-app-muted group-hover:text-app-main transition-transform group-hover:translate-x-0.5" />
-            </button>
-          </div>
         </div>
 
         {/* Security badge */}
         <div className="mt-4 pt-3 border-t border-app-subtle flex items-center justify-center gap-2 text-[10px] font-mono-code text-app-muted">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Verifica duplicati attiva • Dati al sicuro</span>
+          <span>Autenticazione sicura • Dati protetti</span>
         </div>
       </div>
     </div>
