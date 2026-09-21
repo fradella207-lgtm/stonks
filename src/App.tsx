@@ -103,9 +103,32 @@ export default function App() {
     const local = getStoredTransactions();
     setTransactions(local);
 
+    // Check for stored local profile if in guest mode
+    const storedGuestProfile = localStorage.getItem('stonks_local_profile_v1');
+    if (storedGuestProfile && !user) {
+      try {
+        setUser(JSON.parse(storedGuestProfile));
+      } catch (e) {
+        console.warn('Failed to parse local profile:', e);
+      }
+    }
+
     // 2. Firebase Auth & Sync subscriptions
     const unsubAuth = firebaseSyncService.subscribeAuth((u) => {
-      setUser(u);
+      if (u) {
+        setUser(u);
+      } else {
+        const localProf = localStorage.getItem('stonks_local_profile_v1');
+        if (localProf) {
+          try {
+            setUser(JSON.parse(localProf));
+          } catch (e) {
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
+      }
       setAuthInitialized(true);
     });
 
@@ -237,7 +260,9 @@ export default function App() {
     try {
       await firebaseSyncService.logout();
       setGuestMode(false);
+      setUser(null);
       localStorage.removeItem(GUEST_DISMISSED_KEY);
+      localStorage.removeItem('stonks_local_profile_v1');
     } catch (e) {
       console.warn('Logout failed:', e);
     }
@@ -248,9 +273,19 @@ export default function App() {
     setTransactions([]);
   };
 
-  const handleContinueAsGuest = () => {
+  const handleContinueAsGuest = (nickname?: string) => {
     setGuestMode(true);
     localStorage.setItem(GUEST_DISMISSED_KEY, 'true');
+    if (nickname && nickname.trim()) {
+      const localUser: UserProfile = {
+        uid: 'local_' + Date.now(),
+        email: null,
+        displayName: nickname.trim(),
+        photoURL: null,
+      };
+      setUser(localUser);
+      localStorage.setItem('stonks_local_profile_v1', JSON.stringify(localUser));
+    }
   };
 
   // Show Login Screen if no user is signed in and user hasn't explicitly chosen guest mode

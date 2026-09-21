@@ -12,16 +12,18 @@ import {
   User as UserIcon,
   ShieldCheck,
   AlertCircle,
-  Sparkles,
   ArrowRight,
-  CheckCircle2,
+  ExternalLink,
+  HelpCircle,
+  RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 import { firebaseSyncService } from '../services/firebaseSync.ts';
 import { UserProfile } from '../types.ts';
 
 interface LoginScreenProps {
   onSuccess: (user: UserProfile) => void;
-  onContinueAsGuest: () => void;
+  onContinueAsGuest: (nickname?: string) => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
@@ -33,17 +35,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isOperationNotAllowed, setIsOperationNotAllowed] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Clear errors when toggling modes
   const handleToggleMode = () => {
     setIsRegisterMode((prev) => !prev);
     setErrorMsg('');
+    setIsOperationNotAllowed(false);
   };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+    setIsOperationNotAllowed(false);
     setLoading(true);
 
     try {
@@ -71,9 +76,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       }
     } catch (err: any) {
       console.warn('Auth error:', err);
-      // Friendly localized error messages
       const code = err?.code || '';
-      if (code === 'auth/email-already-in-use') {
+      const msg = String(err?.message || '');
+
+      if (code === 'auth/operation-not-allowed' || msg.includes('operation-not-allowed')) {
+        setIsOperationNotAllowed(true);
+        setErrorMsg(
+          isRegisterMode
+            ? 'Il provider "Email/Password" non è ancora attivo nella console Firebase del progetto.'
+            : 'L\'accesso "Email/Password" non è ancora attivo nella console Firebase del progetto.'
+        );
+      } else if (code === 'auth/email-already-in-use') {
         setErrorMsg('Questa email è già registrata. Effettua il login invece di registrarti.');
       } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
         setErrorMsg('Email o password errati. Riprova.');
@@ -93,18 +106,33 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
   const handleGoogleLogin = async () => {
     setErrorMsg('');
+    setIsOperationNotAllowed(false);
     setLoading(true);
     try {
       const profile = await firebaseSyncService.loginWithGoogle();
       onSuccess(profile);
     } catch (err: any) {
-      if (err?.code !== 'auth/popup-closed-by-user') {
-        setErrorMsg('Accesso con Google non riuscito o annullato.');
+      console.warn('Google login error:', err);
+      const code = err?.code || '';
+      const msg = String(err?.message || '');
+
+      if (code === 'auth/popup-closed-by-user') {
+        return;
+      }
+
+      if (code === 'auth/operation-not-allowed' || msg.includes('operation-not-allowed')) {
+        setIsOperationNotAllowed(true);
+        setErrorMsg('L\'accesso con Google non è ancora attivo nella console Firebase del progetto.');
+      } else {
+        setErrorMsg(err.message || 'Accesso con Google non riuscito. Verifica la connessione.');
       }
     } finally {
       setLoading(false);
     }
   };
+
+  const firebaseConsoleProvidersUrl =
+    'https://console.firebase.google.com/project/gen-lang-client-0071556773/authentication/providers';
 
   return (
     <div className="min-h-screen bg-app-canvas flex items-center justify-center p-4 relative overflow-hidden text-app-main">
@@ -169,7 +197,66 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         {errorMsg && (
           <div className="mb-4 p-3 rounded-2xl bg-red-950/30 border border-red-500/40 text-red-400 text-xs font-mono-code flex items-start gap-2.5">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
-            <div className="leading-relaxed">{errorMsg}</div>
+            <div className="leading-relaxed flex-1">{errorMsg}</div>
+          </div>
+        )}
+
+        {/* Dedicated Guided Resolution for operation-not-allowed */}
+        {isOperationNotAllowed && (
+          <div className="mb-5 p-4 rounded-2xl bg-amber-950/30 border border-amber-500/40 text-amber-200 text-xs font-mono-code space-y-3">
+            <div className="flex items-center gap-2 text-amber-400 font-bold uppercase tracking-wider text-[11px]">
+              <HelpCircle className="w-4 h-4 shrink-0" />
+              <span>Abilitazione Provider Firebase</span>
+            </div>
+
+            <p className="text-[11px] text-amber-200/90 leading-relaxed">
+              Per sicurezza, ogni nuovo database Firebase richiede di attivare i metodi di accesso una tantum dalla console:
+            </p>
+
+            <div className="bg-black/40 rounded-xl p-3 space-y-1.5 text-[10px] text-zinc-300">
+              <div className="flex items-start gap-1.5">
+                <span className="font-bold text-amber-400">1.</span>
+                <span>
+                  Apri la console e vai su <strong>Sign-in method</strong>.
+                </span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="font-bold text-amber-400">2.</span>
+                <span>
+                  Clicca su <strong>Email/Password</strong> e attiva lo switch <strong>Abilita</strong> &rarr; Salva.
+                </span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="font-bold text-amber-400">3.</span>
+                <span>
+                  Clicca su <strong>Google</strong>, attiva lo switch <strong>Abilita</strong>, seleziona la tua email di supporto &rarr; Salva.
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-1 flex flex-col sm:flex-row gap-2">
+              <a
+                href={firebaseConsoleProvidersUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 transition-colors text-center"
+              >
+                <span>Apri Console Firebase</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOperationNotAllowed(false);
+                  setErrorMsg('');
+                }}
+                className="py-2 px-3 rounded-xl bg-app-card border border-app hover:bg-app-hover text-app-main font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>Riprova</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -287,21 +374,31 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             <span>Continua con account Google</span>
           </button>
 
-          {/* Continue Offline/Guest */}
-          <button
-            type="button"
-            onClick={onContinueAsGuest}
-            className="w-full py-2 text-center text-[11px] font-mono-code text-app-muted hover:text-app-main transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-          >
-            <span>Usa in modalità locale (senza account)</span>
-            <ArrowRight className="w-3 h-3" />
-          </button>
+          {/* Continue Offline/Guest button with instant unblock */}
+          <div className="pt-2 border-t border-app-subtle/60">
+            <button
+              type="button"
+              onClick={() => onContinueAsGuest(displayName.trim() || undefined)}
+              className="w-full py-2.5 px-3 rounded-2xl bg-app-subtle hover:bg-app-hover border border-app text-app-sub hover:text-app-main font-mono-code text-xs transition-colors cursor-pointer flex items-center justify-between group"
+            >
+              <div className="text-left">
+                <div className="font-bold text-app-main text-[11px] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Usa subito in modalità locale</span>
+                </div>
+                <div className="text-[9px] text-app-muted">
+                  Funziona al 100% offline senza attendere Firebase
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-app-muted group-hover:text-app-main transition-transform group-hover:translate-x-0.5" />
+            </button>
+          </div>
         </div>
 
-        {/* Security / No Duplication badge */}
-        <div className="mt-5 pt-3 border-t border-app-subtle flex items-center justify-center gap-2 text-[10px] font-mono-code text-app-muted">
+        {/* Security badge */}
+        <div className="mt-4 pt-3 border-t border-app-subtle flex items-center justify-center gap-2 text-[10px] font-mono-code text-app-muted">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Verifica duplicazione email attiva • Dati protetti</span>
+          <span>Verifica duplicati attiva • Dati al sicuro</span>
         </div>
       </div>
     </div>

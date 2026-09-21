@@ -217,7 +217,7 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] transition-all cursor-pointer shadow-[0_0_10px_rgba(220,38,38,0.3)]"
                     >
                       <LogIn className="w-3.5 h-3.5" />
-                      <span>Accedi con Google</span>
+                      <span>Accedi / Registrati</span>
                     </button>
                   </div>
                 )}
