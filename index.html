@@ -9,13 +9,31 @@
     <meta property="og:description" content="Gestione spese ed entrate con design leggero in stile Nothing OS, statistiche avanzate, temi personalizzabili, import/export CSV/JSON e sincronizzazione cloud." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#09090b" />
-    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#09090b" id="meta-theme-color" />
+    <meta name="color-scheme" content="dark" id="meta-color-scheme" />
+    <meta name="navigation-bar-color" content="#09090b" />
+    <meta name="msapplication-navbutton-color" content="#09090b" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('stonks_theme_mode');
+          var isLight = saved === 'light';
+          var isBlack = saved === 'black';
+          var color = isLight ? '#ffffff' : (isBlack ? '#000000' : '#09090b');
+          var scheme = isLight ? 'light' : 'dark';
+          document.documentElement.className = (isLight ? 'light ' : 'dark ') + 'theme-' + (saved || 'dark');
+          document.documentElement.style.backgroundColor = color;
+          document.documentElement.style.colorScheme = scheme;
+          var metaTheme = document.getElementById('meta-theme-color');
+          if (metaTheme) metaTheme.setAttribute('content', color);
+          var metaScheme = document.getElementById('meta-color-scheme');
+          if (metaScheme) metaScheme.setAttribute('content', scheme);
+        } catch(e) {}
+      })();
+    </script>
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/svg+xml" href="/icona.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">

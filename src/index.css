@@ -3,6 +3,7 @@
 @layer base {
   :root,
   .theme-dark {
+    color-scheme: dark;
     --app-bg: #09090b;
     --card-bg: #121216;
     --card-subtle-bg: #18181f;
@@ -20,6 +21,7 @@
   }
 
   .theme-black {
+    color-scheme: dark;
     --app-bg: #000000;
     --card-bg: #080808;
     --card-subtle-bg: #121212;
@@ -37,6 +39,7 @@
   }
 
   .theme-light {
+    color-scheme: light;
     --app-bg: #f8f9fa;
     --card-bg: #ffffff;
     --card-subtle-bg: #f1f3f7;
@@ -56,6 +59,12 @@
   html {
     background-color: var(--app-bg);
     min-height: 100%;
+    color-scheme: dark;
+  }
+
+  html.light,
+  html.theme-light {
+    color-scheme: light;
   }
 
   body {

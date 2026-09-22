@@ -103,14 +103,27 @@ export default function App() {
     }
 
     const themeColor = isLight ? '#ffffff' : isBlack ? '#000000' : '#09090b';
+    const colorScheme = isLight ? 'light' : 'dark';
 
     document.documentElement.style.backgroundColor = themeColor;
     document.body.style.backgroundColor = themeColor;
+    document.documentElement.style.colorScheme = colorScheme;
+    document.body.style.colorScheme = colorScheme;
 
     const metaThemes = document.querySelectorAll('meta[name="theme-color"]');
     metaThemes.forEach((meta) => {
       meta.setAttribute('content', themeColor);
     });
+
+    const metaColorScheme = document.getElementById('meta-color-scheme');
+    if (metaColorScheme) {
+      metaColorScheme.setAttribute('content', colorScheme);
+    }
+
+    const metaNavBarColor = document.querySelector('meta[name="navigation-bar-color"]');
+    if (metaNavBarColor) {
+      metaNavBarColor.setAttribute('content', themeColor);
+    }
 
     const metaAppleStatus = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
     if (metaAppleStatus) {

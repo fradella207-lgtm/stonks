@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.insetsController?.setSystemBarsAppearance(
                 0,
-                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
             )
         }
 
