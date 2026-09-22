@@ -33,7 +33,7 @@ import {
 } from './services/storage.ts';
 import { syncManager } from './services/syncManager.ts';
 import { firebaseSyncService } from './services/firebaseSync.ts';
-import { triggerStonksIfPositive } from './services/stonksEffect.ts';
+import { triggerTransactionEffect } from './services/stonksEffect.ts';
 
 export default function App() {
   // Navigation: 'history' (Movimenti) or 'reports' (Report & Analisi)
@@ -69,17 +69,6 @@ export default function App() {
     return inc - exp;
   }, [transactions, currentMonthStr]);
 
-  const isInitialMountRef = React.useRef<boolean>(true);
-
-  useEffect(() => {
-    if (isInitialMountRef.current) {
-      triggerStonksIfPositive(currentMonthNet, true);
-      isInitialMountRef.current = false;
-    } else {
-      triggerStonksIfPositive(currentMonthNet, false);
-    }
-  }, [currentMonthNet]);
-
   // Sync state
   const [syncState, setSyncState] = useState<AppSyncState>('synced');
   const [pendingCount, setPendingCount] = useState<number>(0);
@@ -102,18 +91,27 @@ export default function App() {
     );
     document.documentElement.classList.add(`theme-${currentTheme}`);
 
-    if (currentTheme === 'light') {
+    const isLight = currentTheme === 'light';
+    const isBlack = currentTheme === 'black';
+
+    if (isLight) {
       document.documentElement.classList.add('light');
+      document.documentElement.style.colorScheme = 'light';
     } else {
       document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
     }
+
+    const themeColor = isLight ? '#f8f9fa' : isBlack ? '#000000' : '#09090b';
 
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
-      metaTheme.setAttribute(
-        'content',
-        currentTheme === 'light' ? '#f8f9fa' : currentTheme === 'black' ? '#000000' : '#09090b'
-      );
+      metaTheme.setAttribute('content', themeColor);
+    }
+
+    const metaAppleStatus = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (metaAppleStatus) {
+      metaAppleStatus.setAttribute('content', isLight ? 'default' : 'black-translucent');
     }
   }, [currentTheme]);
 
@@ -207,6 +205,9 @@ export default function App() {
       });
 
       setTransactions((prev) => [transaction, ...prev]);
+
+      // Sound and animation triggered specifically when adding an income or expense
+      triggerTransactionEffect(data.type);
 
       // Background Firestore write
       firebaseSyncService.saveTransaction(transaction).catch(console.warn);

@@ -71,8 +71,8 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
       )}
 
       {/* Main Bottom Bar with Safe-Area padding for iOS Home Indicator & Android Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-app-tabbar backdrop-blur-xl border-t border-app px-4 py-2 pb-safe transition-colors shadow-lg">
-        <div className="max-w-xl mx-auto flex items-center justify-between px-3">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-app-tabbar backdrop-blur-xl border-t border-app px-4 pb-safe transition-colors shadow-lg">
+        <div className="max-w-xl mx-auto w-full flex items-center justify-between px-3 min-h-[68px] sm:min-h-[72px] py-1.5">
           {/* Tab 1: Movimenti */}
           <button
             id="btn-tab-history"

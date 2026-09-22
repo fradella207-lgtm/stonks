@@ -67,11 +67,11 @@
 
 /* Safe Area Inset Helpers for iOS Dynamic Island / Notch and Android Status Bar */
 .pt-safe {
-  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .pb-safe {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Semantic Theme Helpers */

@@ -23,7 +23,7 @@ import {
   Activity,
 } from 'lucide-react';
 import { Transaction, TransactionType } from '../types.ts';
-import { WeeklyRecapCard } from './WeeklyRecapCard.tsx';
+import { DailyActivityCard } from './DailyActivityCard.tsx';
 import { FinancialTelematicsCard } from './FinancialTelematicsCard.tsx';
 
 interface HistoryTabProps {
@@ -43,10 +43,9 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | TransactionType>('all');
-  const [timeFilter, setTimeFilter] = useState<'currentMonth' | 'all'>('currentMonth');
+  const [timeFilter, setTimeFilter] = useState<'week' | 'currentMonth' | 'all'>('currentMonth');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [viewReceiptUrl, setViewReceiptUrl] = useState<string | null>(null);
-  const [showWeeklyRecap, setShowWeeklyRecap] = useState<boolean>(false);
 
   const currentMonthPrefix = useMemo(() => {
     return new Date().toISOString().substring(0, 7);
@@ -56,8 +55,23 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
   const filtered = useMemo(() => {
     return transactions
       .filter((t) => {
-        // Period filter (Questo mese vs Tutto)
-        if (timeFilter === 'currentMonth') {
+        // Period filter (Settimana vs Questo mese vs Tutto)
+        if (timeFilter === 'week') {
+          if (!t.date) return false;
+          const now = new Date();
+          const day = now.getDay();
+          const diffToMon = (day === 0 ? -6 : 1) - day;
+          const monday = new Date(now);
+          monday.setDate(now.getDate() + diffToMon);
+          monday.setHours(0, 0, 0, 0);
+
+          const sunday = new Date(monday);
+          sunday.setDate(monday.getDate() + 6);
+          sunday.setHours(23, 59, 59, 999);
+
+          const tDate = new Date(`${t.date}T00:00:00`);
+          if (tDate < monday || tDate > sunday) return false;
+        } else if (timeFilter === 'currentMonth') {
           if (!t.date || !t.date.startsWith(currentMonthPrefix)) return false;
         }
 
@@ -156,38 +170,8 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
         onNavigateReports={onNavigateReports}
       />
 
-      {/* 2. Optional Expandable 7-Day Flow Radar */}
-      <div className="pt-0.5">
-        <button
-          type="button"
-          onClick={() => setShowWeeklyRecap((prev) => !prev)}
-          className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-app-card hover:bg-app-hover border border-app text-xs font-mono-code text-app-muted hover:text-app-main transition-colors cursor-pointer shadow-2xs"
-        >
-          <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-[11px] text-app-main">
-            <Activity className="w-3.5 h-3.5 text-red-500" />
-            <span>Radar Settimanale (Ultimi 7 Giorni)</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-app-muted">
-            <span>{showWeeklyRecap ? 'Comprimi' : 'Espandi grafico'}</span>
-            <ChevronDown
-              className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                showWeeklyRecap ? 'rotate-180' : ''
-              }`}
-            />
-          </div>
-        </button>
-
-        {showWeeklyRecap && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-2.5"
-          >
-            <WeeklyRecapCard transactions={transactions} onOpenAdd={() => onOpenAdd('expense')} />
-          </motion.div>
-        )}
-      </div>
+      {/* 2. Fixed Daily Activity Chart (Attività Giornaliera) */}
+      <DailyActivityCard transactions={transactions} />
 
       {/* 3. Fluid Controls: Search, Quick Period, Type Filters */}
       <div className="space-y-2.5 pt-1">
@@ -225,6 +209,17 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
           <div className="flex items-center gap-1 bg-app-card p-0.5 rounded-full border border-app shrink-0">
             <button
               type="button"
+              onClick={() => setTimeFilter('week')}
+              className={`px-2.5 py-1 rounded-full text-[10px] font-mono-code transition-all cursor-pointer ${
+                timeFilter === 'week'
+                  ? 'bg-app-subtle text-app-main font-bold border border-app shadow-xs'
+                  : 'text-app-muted hover:text-app-main'
+              }`}
+            >
+              Settimana
+            </button>
+            <button
+              type="button"
               onClick={() => setTimeFilter('currentMonth')}
               className={`px-2.5 py-1 rounded-full text-[10px] font-mono-code transition-all cursor-pointer ${
                 timeFilter === 'currentMonth'
@@ -232,7 +227,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
                   : 'text-app-muted hover:text-app-main'
               }`}
             >
-              Questo Mese
+              Mese
             </button>
             <button
               type="button"
@@ -243,7 +238,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
                   : 'text-app-muted hover:text-app-main'
               }`}
             >
-              Tutto lo Storico
+              Tutto
             </button>
           </div>
 

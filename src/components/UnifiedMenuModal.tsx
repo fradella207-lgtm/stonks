@@ -181,20 +181,22 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
               </div>
 
               {/* User Account Login / Logout */}
-              <div className="pt-2 border-t border-app-subtle flex items-center justify-between">
+              <div className="pt-2 border-t border-app-subtle">
                 {user ? (
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between gap-2 w-full">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       {user.photoURL ? (
                         <img
                           src={user.photoURL}
                           alt={user.displayName || 'User'}
-                          className="w-6 h-6 rounded-full border border-app"
+                          className="w-7 h-7 rounded-full border border-app shrink-0"
                         />
                       ) : (
-                        <UserCheck className="w-5 h-5 text-emerald-400" />
+                        <div className="w-7 h-7 rounded-full bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                          <UserCheck className="w-4 h-4 text-emerald-400" />
+                        </div>
                       )}
-                      <div className="truncate max-w-[170px]">
+                      <div className="min-w-0 flex-1">
                         <div className="text-[11px] font-bold text-app-main truncate">
                           {user.displayName || 'Account Connesso'}
                         </div>
@@ -206,22 +208,22 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
                       onClick={() => {
                         onLogout();
                       }}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-950/30 border border-red-500/30 text-red-400 hover:bg-red-900/40 text-[10px] transition-colors cursor-pointer"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-950/30 border border-red-500/30 text-red-400 hover:bg-red-900/40 text-[10px] font-bold transition-colors cursor-pointer shrink-0"
                     >
                       <LogOut className="w-3 h-3" />
                       <span>Esci</span>
                     </button>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between w-full">
-                    <div className="text-[10px] text-app-muted">
-                      Accedi per salvare su Google Cloud
+                  <div className="flex items-center justify-between gap-2 w-full flex-wrap sm:flex-nowrap">
+                    <div className="text-[10px] text-app-muted min-w-0 flex-1">
+                      Accedi con Google per sincronizzare tra dispositivi
                     </div>
                     <button
                       onClick={() => {
                         onLogin();
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] transition-all cursor-pointer shadow-[0_0_10px_rgba(220,38,38,0.3)]"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] transition-all cursor-pointer shadow-[0_0_10px_rgba(220,38,38,0.3)] shrink-0"
                     >
                       <LogIn className="w-3.5 h-3.5" />
                       <span>Accedi / Registrati</span>
@@ -257,7 +259,7 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
                     >
                       {t.icon}
                     </div>
-                    <div className="text-[11px] font-bold text-app-main leading-tight">
+                    <div className="text-[11px] font-bold text-app-main leading-tight truncate w-full px-0.5">
                       {t.name}
                     </div>
                     <div className="text-[9px] text-app-muted mt-0.5 leading-tight">
@@ -285,25 +287,25 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
                 onClose();
                 onOpenDataTransfer();
               }}
-              className="w-full p-3 rounded-2xl bg-app-subtle hover:bg-app-hover border border-app flex items-center justify-between transition-colors cursor-pointer text-left"
+              className="w-full p-3 rounded-2xl bg-app-subtle hover:bg-app-hover border border-app flex items-center justify-between gap-3 transition-colors cursor-pointer text-left"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-app-card border border-app flex items-center justify-center text-app-main">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-8 h-8 rounded-xl bg-app-card border border-app flex items-center justify-center text-app-main shrink-0">
                   <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
                 </div>
-                <div>
-                  <div className="text-xs font-bold text-app-main flex items-center gap-1.5">
-                    <span>Importa ed Esporta Dati</span>
-                    <span className="px-1.5 py-0.2 rounded bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-[8px]">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs font-bold text-app-main">Importa ed Esporta Dati</span>
+                    <span className="px-1.5 py-0.2 rounded bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-[8px] font-bold shrink-0">
                       Google Fogli
                     </span>
                   </div>
-                  <div className="text-[10px] text-app-muted">
-                    Salva su Google Fogli, scarica CSV/JSON o ripristina vecchi dati
+                  <div className="text-[10px] text-app-muted mt-0.5 leading-relaxed">
+                    Salva su Google Fogli, scarica CSV/JSON o ripristina backup
                   </div>
                 </div>
               </div>
-              <ExternalLink className="w-4 h-4 text-app-muted" />
+              <ExternalLink className="w-4 h-4 text-app-muted shrink-0" />
             </button>
           </div>
 
@@ -316,25 +318,25 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
 
             <button
               onClick={() => setShowFeedbackModal(true)}
-              className="w-full p-3 rounded-2xl bg-app-subtle hover:bg-app-hover border border-app flex items-center justify-between transition-colors cursor-pointer text-left group"
+              className="w-full p-3 rounded-2xl bg-app-subtle hover:bg-app-hover border border-app flex items-center justify-between gap-3 transition-colors cursor-pointer text-left group"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-app-card border border-app flex items-center justify-center text-red-500 group-hover:scale-105 transition-transform">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-8 h-8 rounded-xl bg-app-card border border-app flex items-center justify-center text-red-500 group-hover:scale-105 transition-transform shrink-0">
                   <Lightbulb className="w-4 h-4 text-amber-500" />
                 </div>
-                <div>
-                  <div className="text-xs font-bold text-app-main flex items-center gap-1.5">
-                    <span>Segnalazioni e suggerimenti</span>
-                    <span className="px-1.5 py-0.2 rounded-full bg-red-600/15 border border-red-500/30 text-red-600 dark:text-red-400 text-[8px] font-bold">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs font-bold text-app-main">Segnalazioni e suggerimenti</span>
+                    <span className="px-1.5 py-0.2 rounded-full bg-red-600/15 border border-red-500/30 text-red-600 dark:text-red-400 text-[8px] font-bold shrink-0">
                       Migliora Stonks
                     </span>
                   </div>
-                  <div className="text-[10px] text-app-muted">
+                  <div className="text-[10px] text-app-muted mt-0.5 leading-relaxed">
                     Proponi idee, richiedi funzioni o segnala un problema
                   </div>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-app-muted group-hover:translate-x-0.5 transition-transform" />
+              <ChevronRight className="w-4 h-4 text-app-muted group-hover:translate-x-0.5 transition-transform shrink-0" />
             </button>
           </div>
 

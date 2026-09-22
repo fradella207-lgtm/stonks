@@ -229,6 +229,20 @@ export function showMemeModal(type: 'stonks' | 'not-stonks'): void {
 }
 
 /**
+ * Explicitly triggers celebration or alert when adding an income or expense
+ */
+export function triggerTransactionEffect(type: 'income' | 'expense'): void {
+  if (type === 'income') {
+    playStonksAudio();
+    launchStonksConfetti();
+    showMemeModal('stonks');
+  } else {
+    playNotStonksAudio();
+    showMemeModal('not-stonks');
+  }
+}
+
+/**
  * Resets or sets previousNetState explicitly (e.g. on month switch)
  */
 export function setPreviousNetState(net: number | null): void {

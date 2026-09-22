@@ -25,6 +25,10 @@ import {
   ArrowDownRight,
   Sparkles,
   BarChart3,
+  Search,
+  Filter,
+  Check,
+  X,
 } from 'lucide-react';
 import { Transaction, TimeFilterPeriod } from '../types.ts';
 
@@ -51,6 +55,29 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   const [selectedMonth, setSelectedMonth] = useState<string>('all'); // 'all' | '01' ... '12'
   const [movementTypeFilter, setMovementTypeFilter] = useState<'all' | 'expense' | 'income'>('all');
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
+
+  // Search & Multi-Select Category Filters for Reports
+  const [reportSearchQuery, setReportSearchQuery] = useState<string>('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [isCategoryFilterOpen, setIsCategoryFilterOpen] = useState<boolean>(false);
+
+  // Extract all distinct categories available across transactions
+  const allCategories = useMemo(() => {
+    const cats = new Set<string>();
+    transactions.forEach((t) => {
+      if (t.category && t.category.trim()) {
+        cats.add(t.category.trim());
+      }
+    });
+    return Array.from(cats).sort();
+  }, [transactions]);
+
+  // Toggle multi-select category
+  const toggleCategory = (cat: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+  };
 
   // 1. Dynamically extract all available years
   const availableYears = useMemo(() => {
@@ -210,8 +237,26 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   // Grouped monthly breakdowns
   const groupedMonths = useMemo(() => {
     const list = filteredTransactions.filter((t) => {
-      if (movementTypeFilter === 'all') return true;
-      return t.type === movementTypeFilter;
+      // Filter by movement type (all, expense, income)
+      if (movementTypeFilter !== 'all' && t.type !== movementTypeFilter) return false;
+
+      // Filter by selected categories (multi-select)
+      if (selectedCategories.length > 0) {
+        if (!t.category || !selectedCategories.includes(t.category.trim())) return false;
+      }
+
+      // Filter by search query
+      if (reportSearchQuery.trim()) {
+        const q = reportSearchQuery.toLowerCase();
+        const matchDesc = t.description.toLowerCase().includes(q);
+        const matchCat = t.category && t.category.toLowerCase().includes(q);
+        const matchLoc = t.location && t.location.toLowerCase().includes(q);
+        const matchAmt = t.amount.toString().includes(q);
+        const matchDate = t.date.includes(q);
+        if (!matchDesc && !matchCat && !matchLoc && !matchAmt && !matchDate) return false;
+      }
+
+      return true;
     });
 
     const groups: Record<
@@ -233,7 +278,11 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
     });
 
     return groups;
-  }, [filteredTransactions, movementTypeFilter]);
+  }, [filteredTransactions, movementTypeFilter, selectedCategories, reportSearchQuery]);
+
+  const totalMatchingExplorerItems = useMemo(() => {
+    return Object.values(groupedMonths).reduce((acc, g) => acc + g.items.length, 0);
+  }, [groupedMonths]);
 
   const sortedGroupKeys = Object.keys(groupedMonths).sort().reverse();
 
@@ -342,29 +391,29 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
           </div>
         </div>
 
-        {/* Legend Tiles */}
-        <div className="grid grid-cols-2 gap-2 mt-4 pt-3.5 border-t border-app-subtle">
-          <div className="p-2.5 rounded-2xl bg-app-subtle border border-app flex items-center justify-between">
+        {/* Legend Tiles (Stacked layout with amount under title to eliminate horizontal squeeze) */}
+        <div className="grid grid-cols-2 gap-2.5 mt-4 pt-3.5 border-t border-app-subtle">
+          <div className="p-3 rounded-2xl bg-app-subtle border border-app flex flex-col justify-between gap-1.5 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.7)]" />
-              <span className="text-xs font-mono-code text-app-main font-medium">Entrate</span>
-            </div>
-            <div className="text-right">
-              <span className="text-xs font-mono-code font-bold text-emerald-400">
-                +{formatEUR(totalIncome)}
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.7)] shrink-0" />
+              <span className="text-xs font-mono-code text-app-muted uppercase font-bold tracking-wider truncate">
+                Entrate
               </span>
+            </div>
+            <div className="text-base sm:text-lg font-mono-code font-bold text-emerald-400 truncate">
+              +{formatEUR(totalIncome)}
             </div>
           </div>
 
-          <div className="p-2.5 rounded-2xl bg-app-subtle border border-app flex items-center justify-between">
+          <div className="p-3 rounded-2xl bg-app-subtle border border-app flex flex-col justify-between gap-1.5 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]" />
-              <span className="text-xs font-mono-code text-app-main font-medium">Uscite</span>
-            </div>
-            <div className="text-right">
-              <span className="text-xs font-mono-code font-bold text-red-500">
-                -{formatEUR(totalExpense)}
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)] shrink-0" />
+              <span className="text-xs font-mono-code text-app-muted uppercase font-bold tracking-wider truncate">
+                Uscite
               </span>
+            </div>
+            <div className="text-base sm:text-lg font-mono-code font-bold text-red-500 truncate">
+              -{formatEUR(totalExpense)}
             </div>
           </div>
         </div>
@@ -491,9 +540,9 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
               const pct = totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0;
               return (
                 <div key={cat} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs font-mono-code">
-                    <span className="text-app-main font-medium">{cat}</span>
-                    <span className="text-red-400 font-bold">
+                  <div className="flex items-center justify-between text-xs font-mono-code gap-2">
+                    <span className="text-app-main font-medium truncate flex-1 min-w-0">{cat}</span>
+                    <span className="text-red-400 font-bold shrink-0">
                       {formatEUR(amount)} ({pct}%)
                     </span>
                   </div>
@@ -511,50 +560,159 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
       )}
 
       {/* 6. Grouped Movements by Month Explorer */}
-      <div className="rounded-3xl border border-app bg-app-card p-4 backdrop-blur-md space-y-2.5">
+      <div className="rounded-3xl border border-app bg-app-card p-4 backdrop-blur-md space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-mono-code uppercase tracking-widest text-app-main font-bold">
             DETTAGLIO MENSILE // LISTA
           </span>
           <span className="text-[10px] font-mono-code text-app-muted">
-            {filteredTransactions.length} voci
+            {totalMatchingExplorerItems} voci
           </span>
         </div>
 
-        {/* Type pills inside explorer */}
-        <div className="flex items-center gap-1 pt-1 border-t border-app-subtle">
-          {(
-            [
-              { key: 'all', label: 'Tutti' },
-              { key: 'expense', label: 'Uscite' },
-              { key: 'income', label: 'Entrate' },
-            ] as const
-          ).map((item) => (
+        {/* Search input in Reports */}
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-app-muted" />
+          <input
+            id="input-search-reports"
+            type="text"
+            placeholder="Cerca per voce, categoria, luogo o importo..."
+            value={reportSearchQuery}
+            onChange={(e) => setReportSearchQuery(e.target.value)}
+            className="w-full bg-app-subtle border border-app rounded-2xl pl-9 pr-8 py-2 text-xs font-mono-code text-app-main placeholder:text-app-muted/60 outline-none focus:border-emerald-500 transition-colors"
+          />
+          {reportSearchQuery && (
             <button
-              key={item.key}
               type="button"
-              onClick={() => setMovementTypeFilter(item.key)}
-              className={`px-2.5 py-1 rounded-full text-[10px] font-mono-code transition-all cursor-pointer ${
-                movementTypeFilter === item.key
-                  ? 'bg-app-card text-app-main border border-emerald-500 font-bold shadow-xs'
-                  : 'bg-app-subtle text-app-muted hover:text-app-main border border-app'
-              }`}
+              onClick={() => setReportSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-app-muted hover:text-app-main p-0.5 cursor-pointer"
             >
-              {item.label}
+              <X className="w-3.5 h-3.5" />
             </button>
-          ))}
+          )}
         </div>
 
-        {/* Month Accordion List */}
+        {/* Controls row: Type pills + Multi-Category selector button */}
+        <div className="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-app-subtle">
+          {/* Type pills inside explorer */}
+          <div className="flex items-center gap-1">
+            {(
+              [
+                { key: 'all', label: 'Tutti' },
+                { key: 'expense', label: 'Uscite' },
+                { key: 'income', label: 'Entrate' },
+              ] as const
+            ).map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setMovementTypeFilter(item.key)}
+                className={`px-2.5 py-1 rounded-full text-[10px] font-mono-code transition-all cursor-pointer ${
+                  movementTypeFilter === item.key
+                    ? 'bg-app-card text-app-main border border-emerald-500 font-bold shadow-xs'
+                    : 'bg-app-subtle text-app-muted hover:text-app-main border border-app'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Category Multi-Select Button */}
+          {allCategories.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsCategoryFilterOpen((prev) => !prev)}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono-code border transition-all cursor-pointer ${
+                selectedCategories.length > 0
+                  ? 'bg-red-600/15 border-red-500/50 text-red-500 font-bold shadow-xs'
+                  : isCategoryFilterOpen
+                  ? 'bg-app-card border-app text-app-main'
+                  : 'bg-app-subtle border-app text-app-muted hover:text-app-main'
+              }`}
+            >
+              <Filter className="w-3 h-3" />
+              <span>
+                {selectedCategories.length > 0
+                  ? `Categorie (${selectedCategories.length})`
+                  : 'Filtro Categoria'}
+              </span>
+              <ChevronDown
+                className={`w-3 h-3 transition-transform ${
+                  isCategoryFilterOpen ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+          )}
+        </div>
+
+        {/* Category Multi-Select Panel */}
+        {isCategoryFilterOpen && allCategories.length > 0 && (
+          <div className="p-3 rounded-2xl bg-app-subtle border border-app space-y-2.5 animate-fadeIn">
+            <div className="flex items-center justify-between text-[11px] font-mono-code">
+              <span className="text-app-muted font-bold uppercase tracking-wider text-[10px]">
+                Categorie selezionate ({selectedCategories.length}/{allCategories.length})
+              </span>
+              <div className="flex items-center gap-2">
+                {selectedCategories.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategories([])}
+                    className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                  >
+                    Resetta
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedCategories(
+                      selectedCategories.length === allCategories.length ? [] : [...allCategories]
+                    )
+                  }
+                  className="text-[10px] text-emerald-400 hover:underline cursor-pointer"
+                >
+                  {selectedCategories.length === allCategories.length
+                    ? 'Deseleziona tutti'
+                    : 'Seleziona tutti'}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto no-scrollbar pt-0.5">
+              {allCategories.map((cat) => {
+                const isSelected = selectedCategories.includes(cat);
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => toggleCategory(cat)}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-mono-code transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-red-600 text-white font-bold shadow-xs'
+                        : 'bg-app-card text-app-muted hover:text-app-main border border-app'
+                    }`}
+                  >
+                    {isSelected && <Check className="w-3 h-3" />}
+                    <span>{cat}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Month Accordion List (Default Closed) */}
         <div className="space-y-1.5 pt-1">
           {sortedGroupKeys.length === 0 ? (
             <div className="text-center py-6 text-app-muted text-xs font-mono-code">
-              Nessun movimento trovato per il periodo selezionato.
+              Nessun movimento trovato con i filtri attuali.
             </div>
           ) : (
             sortedGroupKeys.map((key) => {
               const group = groupedMonths[key];
-              const isExpanded = expandedMonths[key] !== false;
+              // Default to closed: only open if user explicitly toggled it to true
+              const isExpanded = !!expandedMonths[key];
 
               return (
                 <div

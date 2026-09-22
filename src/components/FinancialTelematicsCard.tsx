@@ -15,7 +15,6 @@ import {
   Sparkles,
   TrendingUp,
   TrendingDown,
-  Scale,
 } from 'lucide-react';
 import { Transaction } from '../types.ts';
 
@@ -149,45 +148,15 @@ export const FinancialTelematicsCard: React.FC<FinancialTelematicsCardProps> = (
       transition={{ duration: 0.2 }}
       className="w-full rounded-3xl border border-app bg-app-card text-app-main p-5 sm:p-6 shadow-sm transition-colors"
     >
-      {/* 1. Header: Big Bold Status Typography & Badge */}
-      <div className="flex items-start justify-between gap-3 border-b border-app-subtle pb-4">
-        <div className="space-y-1">
-          {/* Status Badge */}
-          <div className="flex items-center gap-2">
-            <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono-code font-bold tracking-wider border ${statusInfo.badgeClass}`}
-            >
-              <StatusIcon className="w-3 h-3 shrink-0" />
-              <span>{statusInfo.badge}</span>
-            </span>
-            <span className="text-[10px] font-mono-code text-app-muted">
-              {daysRemaining} gg a fine mese
-            </span>
+      {/* 1. Header: Big Bold Status Typography */}
+      <div className="border-b border-app-subtle pb-4">
+        {/* Big Stacked Headline */}
+        <div className="select-none pt-0.5">
+          <div className="text-5xl sm:text-6xl font-black tracking-tight leading-[0.88] text-app-main uppercase font-sans">
+            {statusInfo.titleLines[0]}
           </div>
-
-          {/* Big Stacked Headline Inspired by Reference */}
-          <div className="pt-1 select-none">
-            <div className="text-4xl sm:text-5xl font-black tracking-tight leading-[0.9] text-app-main uppercase font-sans">
-              {statusInfo.titleLines[0]}
-            </div>
-            <div className="text-4xl sm:text-5xl font-black tracking-tight leading-[0.9] text-app-main uppercase font-sans mt-0.5">
-              {statusInfo.titleLines[1]}
-            </div>
-          </div>
-        </div>
-
-        {/* Dynamic Metric Tag */}
-        <div className="text-right">
-          <div className="flex items-center justify-end gap-1 text-app-muted text-[11px] font-mono-code">
-            <Scale className="w-3.5 h-3.5" />
-            <span className="uppercase tracking-wider font-semibold">Stato Mese</span>
-          </div>
-          <div
-            className={`text-sm sm:text-base font-mono-code font-black mt-1 ${
-              netBalance >= 0 ? 'text-emerald-500' : 'text-red-500'
-            }`}
-          >
-            {statusInfo.netTag}
+          <div className="text-5xl sm:text-6xl font-black tracking-tight leading-[0.88] text-app-main uppercase font-sans mt-1">
+            {statusInfo.titleLines[1]}
           </div>
         </div>
       </div>
