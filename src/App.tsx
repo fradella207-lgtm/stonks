@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Header } from './components/Header.tsx';
 import { HistoryTab } from './components/HistoryTab.tsx';
 import { ReportsTab } from './components/ReportsTab.tsx';
@@ -33,6 +33,7 @@ import {
 } from './services/storage.ts';
 import { syncManager } from './services/syncManager.ts';
 import { firebaseSyncService } from './services/firebaseSync.ts';
+import { triggerStonksIfPositive } from './services/stonksEffect.ts';
 
 export default function App() {
   // Navigation: 'history' (Movimenti) or 'reports' (Report & Analisi)
@@ -47,12 +48,37 @@ export default function App() {
   // Stored transactions state
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
-  // User profile state & auth gate
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [authInitialized, setAuthInitialized] = useState<boolean>(false);
+  // User profile state & auth gate (initialized from persistent cache immediately)
+  const [user, setUser] = useState<UserProfile | null>(() => firebaseSyncService.getCurrentUser());
+  const [authInitialized, setAuthInitialized] = useState<boolean>(() => firebaseSyncService.getIsAuthReady());
   const [showWelcomeBanner, setShowWelcomeBanner] = useState<boolean>(() => {
     return localStorage.getItem('stonks_new_account_welcome_banner') === 'true';
   });
+
+  // Track current month net balance for Stonks celebration trigger
+  const currentMonthStr = useMemo(() => {
+    return new Date().toISOString().substring(0, 7);
+  }, []);
+
+  const currentMonthNet = useMemo(() => {
+    const monthTxs = transactions.filter(
+      (t) => t.month === currentMonthStr || (t.date && t.date.startsWith(currentMonthStr))
+    );
+    const inc = monthTxs.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const exp = monthTxs.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    return inc - exp;
+  }, [transactions, currentMonthStr]);
+
+  const isInitialMountRef = React.useRef<boolean>(true);
+
+  useEffect(() => {
+    if (isInitialMountRef.current) {
+      triggerStonksIfPositive(currentMonthNet, true);
+      isInitialMountRef.current = false;
+    } else {
+      triggerStonksIfPositive(currentMonthNet, false);
+    }
+  }, [currentMonthNet]);
 
   // Sync state
   const [syncState, setSyncState] = useState<AppSyncState>('synced');
@@ -103,9 +129,9 @@ export default function App() {
     setTransactions(local);
 
     // 2. Firebase Auth & Sync subscriptions
-    const unsubAuth = firebaseSyncService.subscribeAuth((u) => {
+    const unsubAuth = firebaseSyncService.subscribeAuth((u, isReady) => {
       setUser(u);
-      setAuthInitialized(true);
+      setAuthInitialized(isReady);
       if (localStorage.getItem('stonks_new_account_welcome_banner') === 'true') {
         setShowWelcomeBanner(true);
       }
@@ -259,6 +285,21 @@ export default function App() {
     handleDismissWelcomeBanner();
     setIsDataTransferModalOpen(true);
   };
+
+  // Show sleek loader while verifying session on startup if user is not in cache
+  if (!authInitialized && !user) {
+    return (
+      <div className="min-h-screen bg-app-canvas flex flex-col items-center justify-center p-6 text-app-main">
+        <div className="relative w-16 h-16 mb-4 animate-pulse">
+          <img src="/icona.svg" alt="stonks" className="w-full h-full object-contain" />
+        </div>
+        <div className="font-mono-code text-xs text-app-muted tracking-widest uppercase flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+          <span>Caricamento sessione...</span>
+        </div>
+      </div>
+    );
+  }
 
   // Show Login Screen if no user is signed in
   if (authInitialized && !user) {

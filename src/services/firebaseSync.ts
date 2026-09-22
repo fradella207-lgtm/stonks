@@ -23,6 +23,8 @@ import {
   signInWithEmailAndPassword,
   updateProfile,
   getAdditionalUserInfo,
+  setPersistence,
+  browserLocalPersistence,
   User,
 } from 'firebase/auth';
 import { auth, db, googleProvider } from './firebase.ts';
@@ -72,7 +74,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   return errInfo;
 }
 
-type AuthListener = (user: UserProfile | null) => void;
+type AuthListener = (user: UserProfile | null, isReady: boolean) => void;
 type CloudSyncListener = (status: 'synced' | 'syncing' | 'error' | 'offline') => void;
 
 class FirebaseSyncService {
@@ -81,9 +83,30 @@ class FirebaseSyncService {
   private currentUser: UserProfile | null = null;
   private unsubscribeFirestore: (() => void) | null = null;
   private syncStatus: 'synced' | 'syncing' | 'error' | 'offline' = 'synced';
+  private isAuthReady: boolean = false;
 
   constructor() {
+    // 1. Immediately restore cached session so there is never a flash of login screen
+    try {
+      const cached = localStorage.getItem('stonks_auth_cached_user_v2');
+      if (cached) {
+        this.currentUser = JSON.parse(cached);
+        if (this.currentUser?.uid) {
+          this.subscribeToUserFirestore(this.currentUser.uid);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to restore cached user session:', e);
+    }
+
+    // 2. Ensure Firebase browser local persistence is strictly active
+    setPersistence(auth, browserLocalPersistence).catch((err) => {
+      console.warn('Firebase setPersistence warning:', err);
+    });
+
+    // 3. Keep real-time sync with Firebase Auth state
     onAuthStateChanged(auth, (user: User | null) => {
+      this.isAuthReady = true;
       if (user) {
         this.currentUser = {
           uid: user.uid,
@@ -91,9 +114,15 @@ class FirebaseSyncService {
           displayName: user.displayName || (user.isAnonymous ? 'Ospite Locale' : 'Utente'),
           photoURL: user.photoURL,
         };
+        try {
+          localStorage.setItem('stonks_auth_cached_user_v2', JSON.stringify(this.currentUser));
+        } catch (e) {
+          // ignore quota issues
+        }
         this.subscribeToUserFirestore(user.uid);
       } else {
         this.currentUser = null;
+        localStorage.removeItem('stonks_auth_cached_user_v2');
         if (this.unsubscribeFirestore) {
           this.unsubscribeFirestore();
           this.unsubscribeFirestore = null;
@@ -105,7 +134,7 @@ class FirebaseSyncService {
 
   public subscribeAuth(listener: AuthListener): () => void {
     this.authListeners.add(listener);
-    listener(this.currentUser);
+    listener(this.currentUser, this.isAuthReady);
     return () => {
       this.authListeners.delete(listener);
     };
@@ -121,7 +150,7 @@ class FirebaseSyncService {
 
   private notifyAuth() {
     for (const l of this.authListeners) {
-      l(this.currentUser);
+      l(this.currentUser, this.isAuthReady);
     }
   }
 
@@ -134,6 +163,10 @@ class FirebaseSyncService {
 
   public getCurrentUser(): UserProfile | null {
     return this.currentUser;
+  }
+
+  public getIsAuthReady(): boolean {
+    return this.isAuthReady;
   }
 
   // Google Login via popup
@@ -256,6 +289,7 @@ class FirebaseSyncService {
       this.unsubscribeFirestore();
       this.unsubscribeFirestore = null;
     }
+    localStorage.removeItem('stonks_auth_cached_user_v2');
     await fbSignOut(auth);
     this.currentUser = null;
     this.notifyAuth();

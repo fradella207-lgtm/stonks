@@ -79,62 +79,13 @@ export function extractMonth(isoDate: string): string {
   return new Date().toISOString().substring(0, 7);
 }
 
-// Initial clean seed data to showcase the app on first run
-function getInitialSeedData(): Transaction[] {
-  const currentMonth = extractMonth(new Date().toISOString());
-  const today = new Date().toISOString().split('T')[0];
-  const now = new Date();
-  const d1 = new Date(now.getFullYear(), now.getMonth(), Math.max(1, now.getDate() - 1)).toISOString().split('T')[0];
-  const d2 = new Date(now.getFullYear(), now.getMonth(), Math.max(1, now.getDate() - 3)).toISOString().split('T')[0];
-  const d3 = new Date(now.getFullYear(), now.getMonth(), Math.max(1, now.getDate() - 5)).toISOString().split('T')[0];
-
-  return [
-    {
-      id: generateUUID(),
-      date: d3,
-      type: 'income',
-      description: 'Stipendio Mensile',
-      category: 'Lavoro',
-      location: 'Azienda',
-      amount: 2450.00,
-      month: currentMonth,
-      syncStatus: 'synced',
-    },
-    {
-      id: generateUUID(),
-      date: d2,
-      type: 'expense',
-      description: 'Affitto Appartamento',
-      category: 'Casa',
-      location: 'Bonifico',
-      amount: 720.00,
-      month: currentMonth,
-      syncStatus: 'synced',
-    },
-    {
-      id: generateUUID(),
-      date: d1,
-      type: 'expense',
-      description: 'Spesa Esselunga',
-      category: 'Spesa',
-      location: 'Esselunga Milano',
-      amount: 84.50,
-      month: currentMonth,
-      syncStatus: 'synced',
-    },
-    {
-      id: generateUUID(),
-      date: today,
-      type: 'expense',
-      description: 'Caffè e Pranzo',
-      category: 'Ristorante',
-      location: 'Bar Centrale',
-      amount: 14.80,
-      month: currentMonth,
-      syncStatus: 'synced',
-    },
-  ];
-}
+// Known legacy seed dummy transaction titles that should never appear for real users
+const DUMMY_SEED_DESCRIPTIONS = new Set([
+  'Stipendio Mensile',
+  'Affitto Appartamento',
+  'Spesa Esselunga',
+  'Caffè e Pranzo',
+]);
 
 // Update an existing transaction locally (0ms latency)
 export function updateTransactionLocal(updatedTx: Transaction): Transaction {
@@ -173,18 +124,27 @@ export function getStoredTransactions(): Transaction[] {
 
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      return parsed.map((item) => ({
-        id: item.id || generateUUID(),
-        date: sanitizeDate(item.date),
-        type: item.type === 'income' ? 'income' : 'expense',
-        description: String(item.description || 'Senza descrizione').trim(),
-        amount: sanitizeAmount(item.amount),
-        month: item.month || extractMonth(sanitizeDate(item.date)),
-        category: item.category || '',
-        location: item.location || '',
-        receiptImage: item.receiptImage || '',
-        syncStatus: item.syncStatus || 'synced',
-      }));
+      const sanitized = parsed
+        .filter((item) => !DUMMY_SEED_DESCRIPTIONS.has(String(item.description || '').trim()))
+        .map((item) => ({
+          id: item.id || generateUUID(),
+          date: sanitizeDate(item.date),
+          type: item.type === 'income' ? ('income' as const) : ('expense' as const),
+          description: String(item.description || 'Senza descrizione').trim(),
+          amount: sanitizeAmount(item.amount),
+          month: item.month || extractMonth(sanitizeDate(item.date)),
+          category: item.category || '',
+          location: item.location || '',
+          receiptImage: item.receiptImage || '',
+          syncStatus: item.syncStatus || 'synced',
+        }));
+
+      // If we filtered out dummy items, persist the cleaned list immediately
+      if (sanitized.length !== parsed.length) {
+        localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(sanitized));
+      }
+
+      return sanitized;
     }
     return [];
   } catch (err) {

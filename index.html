@@ -12,12 +12,27 @@
     <meta name="theme-color" content="#09090b" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" type="image/svg+xml" href="/icona.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   </head>
   <body class="bg-app-canvas text-app-main antialiased selection:bg-red-600 selection:text-white min-h-screen">
     <div id="root"></div>
+
+    <!-- Hidden audio element for Stonks victory/meme sound -->
+    <audio id="stonksAudio" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" class="hidden"></audio>
+
+    <!-- Overlay Modal (Pop-up Stonks Meme) -->
+    <div id="stonksModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden flex-col items-center justify-center z-50 transition-opacity duration-300">
+      <div class="bg-slate-900 border border-emerald-500/30 rounded-3xl p-6 text-center shadow-2xl max-w-xs mx-4 transform scale-95 animate-in">
+        <img src="https://i.kym-cdn.com/entries/icons/mobile/000/029/982/cover1.jpg" alt="Stonks" class="w-full h-40 object-cover rounded-2xl mb-4 border border-emerald-500/20">
+        <h3 class="text-2xl font-black text-emerald-400 tracking-wide">STONKS! 📈</h3>
+        <p class="text-xs text-slate-400 mt-1 font-medium">Il tuo bilancio mensile è in positivo!</p>
+      </div>
+    </div>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

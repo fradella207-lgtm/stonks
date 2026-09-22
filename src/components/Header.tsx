@@ -38,10 +38,8 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center justify-between max-w-xl mx-auto">
         {/* Brand with Nothing OS minimalist glyph styling */}
         <div className="flex items-center gap-2.5">
-          <div className="relative flex items-center justify-center w-8 h-8 rounded-full border border-app bg-app-card font-mono-code text-[11px] font-bold tracking-tighter">
-            <span className="text-app-main uppercase">S</span>
-            {/* Signature Nothing Red Dot */}
-            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.7)]" />
+          <div className="relative flex items-center justify-center w-8 h-8 rounded-xl overflow-hidden border border-emerald-500/30 bg-slate-950/80 shadow-md">
+            <img src="/icona.svg" alt="stonks logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">

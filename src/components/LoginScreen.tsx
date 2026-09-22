@@ -144,10 +144,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       <div className="relative z-10 w-full max-w-md bg-app-modal border border-app rounded-[32px] p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
         {/* Header Branding */}
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="relative flex items-center justify-center w-12 h-12 rounded-full border border-app bg-app-card font-mono-code text-sm font-bold tracking-tighter mb-3 shadow-sm">
-            <span className="text-app-main uppercase text-lg">S</span>
-            {/* Signature red dot */}
-            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.8)]" />
+          <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl border border-emerald-500/30 bg-slate-950/90 mb-3 shadow-lg overflow-hidden">
+            <img src="/icona.svg" alt="stonks logo" className="w-full h-full object-contain" />
           </div>
 
           <h1 className="font-mono-code text-xl font-bold tracking-tight uppercase flex items-center gap-2 text-app-main">
