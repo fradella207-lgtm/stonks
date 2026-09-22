@@ -24,8 +24,12 @@ import {
   ExternalLink,
   AlertCircle,
   AlertTriangle,
+  MessageSquarePlus,
+  Lightbulb,
+  ChevronRight,
 } from 'lucide-react';
 import { AppSyncState, ThemeMode, UserProfile } from '../types.ts';
+import { FeedbackModal } from './FeedbackModal.tsx';
 
 interface UnifiedMenuModalProps {
   isOpen: boolean;
@@ -57,6 +61,7 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
   onClearData,
 }) => {
   const [clearStep, setClearStep] = useState<0 | 1 | 2>(0);
+  const [showFeedbackModal, setShowFeedbackModal] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
@@ -302,6 +307,37 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
             </button>
           </div>
 
+          {/* 4. Segnalazioni e Suggerimenti per Migliorare */}
+          <div className="space-y-2">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-app-muted flex items-center gap-1.5">
+              <MessageSquarePlus className="w-3.5 h-3.5 text-red-500" />
+              <span>Segnalazioni e Suggerimenti</span>
+            </div>
+
+            <button
+              onClick={() => setShowFeedbackModal(true)}
+              className="w-full p-3 rounded-2xl bg-app-subtle hover:bg-app-hover border border-app flex items-center justify-between transition-colors cursor-pointer text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-app-card border border-app flex items-center justify-center text-red-500 group-hover:scale-105 transition-transform">
+                  <Lightbulb className="w-4 h-4 text-amber-500" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-app-main flex items-center gap-1.5">
+                    <span>Segnalazioni e suggerimenti</span>
+                    <span className="px-1.5 py-0.2 rounded-full bg-red-600/15 border border-red-500/30 text-red-600 dark:text-red-400 text-[8px] font-bold">
+                      Migliora Stonks
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-app-muted">
+                    Proponi idee, richiedi funzioni o segnala un problema
+                  </div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-app-muted group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </div>
+
           {/* 5. Clear Local Data (2-Step Double Confirmation) */}
           <div className="pt-2 border-t border-app-subtle">
             {clearStep === 1 && (
@@ -372,6 +408,13 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Embedded Feedback & Suggestions Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        user={user}
+      />
     </div>
   );
 };

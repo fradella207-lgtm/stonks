@@ -48,3 +48,14 @@ export interface UserProfile {
   displayName: string | null;
   photoURL: string | null;
 }
+
+export interface UserFeedback {
+  id: string;
+  type: 'suggestion' | 'bug' | 'improvement';
+  title: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high';
+  createdAt: string;
+  userEmail?: string | null;
+  status: 'sent' | 'reviewed';
+}
