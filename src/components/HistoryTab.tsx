@@ -43,37 +43,28 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | TransactionType>('all');
-  const [timeFilter, setTimeFilter] = useState<'week' | 'currentMonth' | 'all'>('currentMonth');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [viewReceiptUrl, setViewReceiptUrl] = useState<string | null>(null);
 
-  const currentMonthPrefix = useMemo(() => {
-    return new Date().toISOString().substring(0, 7);
-  }, []);
-
-  // Filter transactions by search query, type, and period
+  // Filter transactions by search query, type, and current week
   const filtered = useMemo(() => {
+    // Current week boundary: Monday to Sunday
+    const now = new Date();
+    const day = now.getDay();
+    const diffToMon = (day === 0 ? -6 : 1) - day;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diffToMon);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
     return transactions
       .filter((t) => {
-        // Period filter (Settimana vs Questo mese vs Tutto)
-        if (timeFilter === 'week') {
-          if (!t.date) return false;
-          const now = new Date();
-          const day = now.getDay();
-          const diffToMon = (day === 0 ? -6 : 1) - day;
-          const monday = new Date(now);
-          monday.setDate(now.getDate() + diffToMon);
-          monday.setHours(0, 0, 0, 0);
-
-          const sunday = new Date(monday);
-          sunday.setDate(monday.getDate() + 6);
-          sunday.setHours(23, 59, 59, 999);
-
-          const tDate = new Date(`${t.date}T00:00:00`);
-          if (tDate < monday || tDate > sunday) return false;
-        } else if (timeFilter === 'currentMonth') {
-          if (!t.date || !t.date.startsWith(currentMonthPrefix)) return false;
-        }
+        if (!t.date) return false;
+        const tDate = new Date(`${t.date}T00:00:00`);
+        if (tDate < monday || tDate > sunday) return false;
 
         // Type filter
         if (typeFilter !== 'all' && t.type !== typeFilter) return false;
@@ -90,7 +81,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
         );
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, timeFilter, currentMonthPrefix, typeFilter, searchQuery]);
+  }, [transactions, typeFilter, searchQuery]);
 
   // Group transactions by day for smooth scannability
   const groupedByDay = useMemo(() => {
@@ -205,41 +196,10 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
 
         {/* Filter Pills */}
         <div className="flex items-center justify-between gap-2 overflow-x-auto no-scrollbar pb-0.5">
-          {/* Period Toggle */}
-          <div className="flex items-center gap-1 bg-app-card p-0.5 rounded-full border border-app shrink-0">
-            <button
-              type="button"
-              onClick={() => setTimeFilter('week')}
-              className={`px-2.5 py-1 rounded-full text-[10px] font-mono-code transition-all cursor-pointer ${
-                timeFilter === 'week'
-                  ? 'bg-app-subtle text-app-main font-bold border border-app shadow-xs'
-                  : 'text-app-muted hover:text-app-main'
-              }`}
-            >
-              Settimana
-            </button>
-            <button
-              type="button"
-              onClick={() => setTimeFilter('currentMonth')}
-              className={`px-2.5 py-1 rounded-full text-[10px] font-mono-code transition-all cursor-pointer ${
-                timeFilter === 'currentMonth'
-                  ? 'bg-app-subtle text-app-main font-bold border border-app shadow-xs'
-                  : 'text-app-muted hover:text-app-main'
-              }`}
-            >
-              Mese
-            </button>
-            <button
-              type="button"
-              onClick={() => setTimeFilter('all')}
-              className={`px-2.5 py-1 rounded-full text-[10px] font-mono-code transition-all cursor-pointer ${
-                timeFilter === 'all'
-                  ? 'bg-app-subtle text-app-main font-bold border border-app shadow-xs'
-                  : 'text-app-muted hover:text-app-main'
-              }`}
-            >
-              Tutto
-            </button>
+          {/* Active Period: Settimana */}
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-app-card rounded-full border border-app shrink-0 text-[10px] font-mono-code text-app-main font-bold shadow-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Settimana</span>
           </div>
 
           {/* Type Filter Pills: Tutti, Solo Uscite, Solo Entrate */}
@@ -284,9 +244,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
           <p className="text-[11px] text-app-muted mt-1 max-w-xs mx-auto">
             {searchQuery
               ? 'Nessun risultato corrisponde alla ricerca corrente.'
-              : timeFilter === 'currentMonth'
-              ? 'Nessun movimento registrato in questo mese.'
-              : 'Nessun movimento registrato nello storico.'}
+              : 'Nessun movimento registrato questa settimana.'}
           </p>
           <button
             type="button"
