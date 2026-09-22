@@ -39,7 +39,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
 
       {/* Floating Speed Dial Mini-Menu (Animated above the + button) */}
       {isSpeedDialOpen && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200">
+        <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+68px)] left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200">
           {/* Uscita Option */}
           <button
             id="btn-speed-dial-uscita"
@@ -72,7 +72,10 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
 
       {/* Main Bottom Bar with Safe-Area padding for iOS Home Indicator & Android Navigation Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-app-tabbar backdrop-blur-xl border-t border-app px-4 pb-safe transition-colors shadow-lg">
-        <div className="max-w-xl mx-auto w-full flex items-center justify-between px-3 min-h-[68px] sm:min-h-[72px] py-1.5">
+        {/* Extended background bleed downwards below bottom edge so color NEVER stops short on Android / overscroll */}
+        <div className="absolute top-0 -bottom-24 left-0 right-0 bg-app-tabbar -z-10 pointer-events-none" />
+
+        <div className="max-w-xl mx-auto w-full flex items-center justify-between px-3 h-[54px] sm:h-[58px]">
           {/* Tab 1: Movimenti */}
           <button
             id="btn-tab-history"
@@ -94,27 +97,27 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
                 </span>
               )}
             </div>
-            <span className="text-[10px] font-mono-code tracking-wider uppercase mt-1">
+            <span className="text-[10px] font-mono-code tracking-wider uppercase mt-0.5">
               Attività
             </span>
             {activeView === 'history' && (
-              <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_6px_rgba(220,38,38,0.8)]" />
+              <span className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_6px_rgba(220,38,38,0.8)]" />
             )}
           </button>
 
           {/* Center Prominent "+" Action Button */}
-          <div className="relative -top-3">
+          <div className="relative -top-2.5">
             <button
               id="btn-main-add"
               onClick={() => setIsSpeedDialOpen((prev) => !prev)}
               aria-label="Aggiungi movimento"
-              className={`w-13 h-13 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border ${
+              className={`w-12 h-12 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border ${
                 isSpeedDialOpen
                   ? 'bg-app-card text-app-main border-app rotate-45 scale-105'
                   : 'bg-red-600 hover:bg-red-500 text-white border-red-400 shadow-[0_0_18px_rgba(220,38,38,0.35)]'
               }`}
             >
-              <Plus className="w-6 h-6 stroke-[2.5] transition-transform duration-200" />
+              <Plus className="w-5.5 h-5.5 stroke-[2.5] transition-transform duration-200" />
             </button>
           </div>
 
@@ -132,11 +135,11 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
             }`}
           >
             <PieChart className={`w-5 h-5 ${activeView === 'reports' ? 'scale-110' : ''}`} />
-            <span className="text-[10px] font-mono-code tracking-wider uppercase mt-1">
+            <span className="text-[10px] font-mono-code tracking-wider uppercase mt-0.5">
               Report
             </span>
             {activeView === 'reports' && (
-              <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_6px_rgba(220,38,38,0.8)]" />
+              <span className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_6px_rgba(220,38,38,0.8)]" />
             )}
           </button>
         </div>

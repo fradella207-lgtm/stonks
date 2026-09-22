@@ -102,7 +102,7 @@ export default function App() {
       document.documentElement.style.colorScheme = 'dark';
     }
 
-    const themeColor = isLight ? '#f8f9fa' : isBlack ? '#000000' : '#09090b';
+    const themeColor = isLight ? '#ffffff' : isBlack ? '#000000' : '#09090b';
 
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
