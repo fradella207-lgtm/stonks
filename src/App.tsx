@@ -104,10 +104,13 @@ export default function App() {
 
     const themeColor = isLight ? '#ffffff' : isBlack ? '#000000' : '#09090b';
 
-    const metaTheme = document.querySelector('meta[name="theme-color"]');
-    if (metaTheme) {
-      metaTheme.setAttribute('content', themeColor);
-    }
+    document.documentElement.style.backgroundColor = themeColor;
+    document.body.style.backgroundColor = themeColor;
+
+    const metaThemes = document.querySelectorAll('meta[name="theme-color"]');
+    metaThemes.forEach((meta) => {
+      meta.setAttribute('content', themeColor);
+    });
 
     const metaAppleStatus = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
     if (metaAppleStatus) {

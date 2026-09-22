@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="it" class="dark">
+<html lang="it" class="dark" style="background-color: #09090b; color-scheme: dark;">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -9,18 +9,21 @@
     <meta property="og:description" content="Gestione spese ed entrate con design leggero in stile Nothing OS, statistiche avanzate, temi personalizzabili, import/export CSV/JSON e sincronizzazione cloud." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#09090b" />
     <meta name="color-scheme" content="dark light" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/svg+xml" href="/icona.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   </head>
-  <body class="bg-app-canvas text-app-main antialiased selection:bg-red-600 selection:text-white min-h-screen">
+  <body class="bg-app-canvas text-app-main antialiased selection:bg-red-600 selection:text-white min-h-screen" style="background-color: #09090b;">
     <div id="root"></div>
 
     <!-- Hidden audio elements for Stonks & Not Stonks sounds -->

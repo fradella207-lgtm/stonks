@@ -24,9 +24,10 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        // Stile Nothing OS dark status bar
-        window.statusBarColor = Color.BLACK
-        window.navigationBarColor = Color.BLACK
+        // Stile Nothing OS status & navigation bar
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT
+        window.decorView.setBackgroundColor(Color.parseColor("#09090b"))
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.insetsController?.setSystemBarsAppearance(
@@ -35,14 +36,15 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        webView = WebView(this)
+        webView = WebView(this).apply {
+            setBackgroundColor(Color.parseColor("#09090b"))
+        }
         setContentView(webView)
 
-        // Safe area padding
+        // Web app handles insets via viewport-fit=cover and CSS env(safe-area-inset-*).
+        // Keep 0 padding on WebView to prevent revealing any white system background under navigation bar.
         ViewCompat.setOnApplyWindowInsetsListener(webView) { v, insets ->
-            val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
-            val navBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-            v.setPadding(0, statusBars.top, 0, navBars.bottom)
+            v.setPadding(0, 0, 0, 0)
             insets
         }
 
