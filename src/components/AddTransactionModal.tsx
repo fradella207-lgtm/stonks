@@ -54,6 +54,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [date, setDate] = useState<string>(todayIso);
   const [location, setLocation] = useState<string>('');
   const [receiptImage, setReceiptImage] = useState<string>('');
+  const [imageError, setImageError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -153,11 +154,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   };
 
   const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageError(null);
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (file.size > 2.5 * 1024 * 1024) {
-      alert('Immagine troppo grande. Scegli uno scontrino inferiore a 2.5MB.');
+      setImageError('Immagine troppo grande. Scegli uno scontrino inferiore a 2.5MB.');
       return;
     }
 
@@ -459,6 +461,11 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   <Camera className="w-4 h-4 text-app-muted" />
                   <span>Carica o scatta foto dello scontrino</span>
                 </button>
+                {imageError && (
+                  <p className="text-[11px] font-mono-code text-red-500 mt-1 text-center">
+                    {imageError}
+                  </p>
+                )}
               </div>
             )}
           </div>

@@ -21,15 +21,18 @@
   <body class="bg-app-canvas text-app-main antialiased selection:bg-red-600 selection:text-white min-h-screen">
     <div id="root"></div>
 
-    <!-- Hidden audio element for Stonks victory/meme sound -->
+    <!-- Hidden audio elements for Stonks & Not Stonks sounds -->
     <audio id="stonksAudio" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" class="hidden"></audio>
+    <audio id="notStonksAudio" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2578/2578-preview.mp3" class="hidden"></audio>
 
-    <!-- Overlay Modal (Pop-up Stonks Meme) -->
-    <div id="stonksModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden flex-col items-center justify-center z-50 transition-opacity duration-300">
-      <div class="bg-slate-900 border border-emerald-500/30 rounded-3xl p-6 text-center shadow-2xl max-w-xs mx-4 transform scale-95 animate-in">
-        <img src="https://i.kym-cdn.com/entries/icons/mobile/000/029/982/cover1.jpg" alt="Stonks" class="w-full h-40 object-cover rounded-2xl mb-4 border border-emerald-500/20">
-        <h3 class="text-2xl font-black text-emerald-400 tracking-wide">STONKS! 📈</h3>
-        <p class="text-xs text-slate-400 mt-1 font-medium">Il tuo bilancio mensile è in positivo!</p>
+    <!-- Overlay Modal (Pop-up Stonks & Not Stonks Meme) -->
+    <div id="stonksModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md hidden flex-col items-center justify-center z-50 transition-opacity duration-300 p-4">
+      <div id="stonksModalCard" class="bg-slate-900 border border-emerald-500/40 rounded-3xl p-5 text-center shadow-2xl max-w-xs w-full transform scale-95 transition-all">
+        <div class="relative overflow-hidden rounded-2xl mb-3.5 border border-white/10 bg-black">
+          <img id="stonksModalImg" src="/stonks.jpg" alt="Meme" class="w-full h-44 object-contain mx-auto">
+        </div>
+        <h3 id="stonksModalTitle" class="text-2xl font-black text-emerald-400 tracking-wider uppercase font-mono-code">STONKS! 📈</h3>
+        <p id="stonksModalSubtitle" class="text-xs text-slate-300 mt-1 font-mono-code">Bilancio mensile in attivo!</p>
       </div>
     </div>
 

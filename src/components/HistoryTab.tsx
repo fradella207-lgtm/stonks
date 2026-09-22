@@ -19,15 +19,19 @@ import {
   Filter,
   Check,
   AlertTriangle,
+  ChevronDown,
+  Activity,
 } from 'lucide-react';
 import { Transaction, TransactionType } from '../types.ts';
 import { WeeklyRecapCard } from './WeeklyRecapCard.tsx';
+import { FinancialTelematicsCard } from './FinancialTelematicsCard.tsx';
 
 interface HistoryTabProps {
   transactions: Transaction[];
   onEdit: (transaction: Transaction) => void;
   onDelete: (id: string) => void;
-  onOpenAdd: () => void;
+  onOpenAdd: (type?: TransactionType) => void;
+  onNavigateReports?: () => void;
 }
 
 export const HistoryTab: React.FC<HistoryTabProps> = ({
@@ -35,12 +39,14 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
   onEdit,
   onDelete,
   onOpenAdd,
+  onNavigateReports,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | TransactionType>('all');
   const [timeFilter, setTimeFilter] = useState<'currentMonth' | 'all'>('currentMonth');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [viewReceiptUrl, setViewReceiptUrl] = useState<string | null>(null);
+  const [showWeeklyRecap, setShowWeeklyRecap] = useState<boolean>(false);
 
   const currentMonthPrefix = useMemo(() => {
     return new Date().toISOString().substring(0, 7);
@@ -143,10 +149,47 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
 
   return (
     <div id="tab-history" className="w-full space-y-4">
-      {/* 1. Fixed Weekly Recap directly in Movimenti */}
-      <WeeklyRecapCard transactions={transactions} onOpenAdd={onOpenAdd} />
+      {/* 1. BMW-Style Instant Financial Cockpit ("Tutto Ok" + Vivace Live Balance & Quick Dock) */}
+      <FinancialTelematicsCard
+        transactions={transactions}
+        onOpenAdd={onOpenAdd}
+        onNavigateReports={onNavigateReports}
+      />
 
-      {/* 2. Fluid Controls: Search, Quick Period, Type Filters */}
+      {/* 2. Optional Expandable 7-Day Flow Radar */}
+      <div className="pt-0.5">
+        <button
+          type="button"
+          onClick={() => setShowWeeklyRecap((prev) => !prev)}
+          className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-app-card hover:bg-app-hover border border-app text-xs font-mono-code text-app-muted hover:text-app-main transition-colors cursor-pointer shadow-2xs"
+        >
+          <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-[11px] text-app-main">
+            <Activity className="w-3.5 h-3.5 text-red-500" />
+            <span>Radar Settimanale (Ultimi 7 Giorni)</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] text-app-muted">
+            <span>{showWeeklyRecap ? 'Comprimi' : 'Espandi grafico'}</span>
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                showWeeklyRecap ? 'rotate-180' : ''
+              }`}
+            />
+          </div>
+        </button>
+
+        {showWeeklyRecap && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mt-2.5"
+          >
+            <WeeklyRecapCard transactions={transactions} onOpenAdd={() => onOpenAdd('expense')} />
+          </motion.div>
+        )}
+      </div>
+
+      {/* 3. Fluid Controls: Search, Quick Period, Type Filters */}
       <div className="space-y-2.5 pt-1">
         {/* Search bar with clear button */}
         <div className="flex items-center gap-2">
@@ -172,7 +215,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
           </div>
 
           <div className="px-3 py-2 rounded-2xl bg-app-card border border-app text-[11px] font-mono-code text-app-muted shrink-0">
-            {filtered.length} {filtered.length === 1 ? 'movimento' : 'movimenti'}
+            {filtered.length} {filtered.length === 1 ? 'attività' : 'attività'}
           </div>
         </div>
 
@@ -252,7 +295,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
           </p>
           <button
             type="button"
-            onClick={onOpenAdd}
+            onClick={() => onOpenAdd('expense')}
             className="mt-3 px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-mono-code font-bold transition-all cursor-pointer shadow-sm active:scale-95"
           >
             + Aggiungi Movimento

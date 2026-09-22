@@ -339,13 +339,14 @@ export default function App() {
             />
           )}
 
-          {/* Section A: Movimenti Tab (Includes fixed weekly recap on top & transaction feed with edit) */}
+          {/* Section A: Movimenti / Attività Tab (Includes BMW Cockpit, Live Balance & Quick Dock) */}
           {activeView === 'history' && (
             <HistoryTab
               transactions={transactions}
               onEdit={handleOpenEdit}
               onDelete={handleDeleteTransaction}
-              onOpenAdd={() => handleOpenAddModal('expense')}
+              onOpenAdd={(type) => handleOpenAddModal(type || 'expense')}
+              onNavigateReports={() => setActiveView('reports')}
             />
           )}
 

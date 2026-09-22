@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Plus, ListOrdered, PieChart, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Plus, Activity, PieChart, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { TransactionType } from '../types.ts';
 
 interface BottomTabBarProps {
@@ -87,7 +87,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
             }`}
           >
             <div className="relative">
-              <ListOrdered className={`w-5 h-5 ${activeView === 'history' ? 'scale-110' : ''}`} />
+              <Activity className={`w-5 h-5 ${activeView === 'history' ? 'scale-110' : ''}`} />
               {pendingCount > 0 && (
                 <span className="absolute -top-1 -right-2 min-w-[14px] h-[14px] px-1 bg-amber-500 text-black font-mono-code text-[9px] font-bold rounded-full flex items-center justify-center">
                   {pendingCount}
@@ -95,7 +95,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
               )}
             </div>
             <span className="text-[10px] font-mono-code tracking-wider uppercase mt-1">
-              Movimenti
+              Attività
             </span>
             {activeView === 'history' && (
               <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_6px_rgba(220,38,38,0.8)]" />
