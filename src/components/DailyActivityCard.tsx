@@ -6,12 +6,27 @@
 import React, { useState, useMemo } from 'react';
 import { Layers } from 'lucide-react';
 import { Transaction } from '../types.ts';
+import { useLanguage } from '../services/i18n.ts';
 
 interface DailyActivityCardProps {
   transactions: Transaction[];
 }
 
 export const DailyActivityCard: React.FC<DailyActivityCardProps> = ({ transactions }) => {
+  const { language, t } = useLanguage();
+
+  const locale = useMemo(() => {
+    return language === 'it'
+      ? 'it-IT'
+      : language === 'es'
+      ? 'es-ES'
+      : language === 'fr'
+      ? 'fr-FR'
+      : language === 'de'
+      ? 'de-DE'
+      : 'en-US';
+  }, [language]);
+
   // Build 7 calendar days array [6 days ago, ..., today]
   const daysData = useMemo(() => {
     const list: {
@@ -31,22 +46,34 @@ export const DailyActivityCard: React.FC<DailyActivityCardProps> = ({ transactio
       d.setDate(now.getDate() - i);
       const dateIso = d.toISOString().split('T')[0];
 
-      const weekdayStr = d.toLocaleDateString('en-US', { weekday: 'short' });
+      const weekdayStr = d.toLocaleDateString(locale, { weekday: 'short' });
       const dayNum = d.getDate();
-      const label = i === 0 ? 'Today' : `${weekdayStr.toUpperCase()} ${dayNum}`;
-      const fullDateLabel = d.toLocaleDateString('en-US', {
+      const label =
+        i === 0
+          ? language === 'it'
+            ? 'Oggi'
+            : language === 'es'
+            ? 'Hoy'
+            : language === 'fr'
+            ? "Auj."
+            : language === 'de'
+            ? 'Heute'
+            : 'Today'
+          : `${weekdayStr.toUpperCase()} ${dayNum}`;
+
+      const fullDateLabel = d.toLocaleDateString(locale, {
         weekday: 'long',
         day: 'numeric',
         month: 'short',
       });
 
-      const dayTxs = transactions.filter((t) => t.date === dateIso);
+      const dayTxs = transactions.filter((tx) => tx.date === dateIso);
       const income = dayTxs
-        .filter((t) => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0);
+        .filter((tx) => tx.type === 'income')
+        .reduce((sum, tx) => sum + tx.amount, 0);
       const expense = dayTxs
-        .filter((t) => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0);
+        .filter((tx) => tx.type === 'expense')
+        .reduce((sum, tx) => sum + tx.amount, 0);
 
       list.push({
         dateIso,
@@ -60,7 +87,7 @@ export const DailyActivityCard: React.FC<DailyActivityCardProps> = ({ transactio
     }
 
     return list;
-  }, [transactions]);
+  }, [transactions, locale, language]);
 
   // Selected day index (default: today, which is index 6)
   const [selectedDayIdx, setSelectedDayIdx] = useState<number>(6);
@@ -78,7 +105,7 @@ export const DailyActivityCard: React.FC<DailyActivityCardProps> = ({ transactio
   const activeDay = daysData[selectedDayIdx] || daysData[6];
 
   const formatEUR = (val: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 2,
@@ -96,7 +123,7 @@ export const DailyActivityCard: React.FC<DailyActivityCardProps> = ({ transactio
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4 text-red-500 shrink-0" />
           <span className="text-[11px] font-mono-code uppercase text-app-main font-bold tracking-wider">
-            Daily Activity (Tap a day to inspect)
+            {t('daily_activity_title')}
           </span>
         </div>
         <span className="text-[10px] font-mono-code text-app-muted capitalize hidden sm:inline-block">
@@ -182,7 +209,7 @@ export const DailyActivityCard: React.FC<DailyActivityCardProps> = ({ transactio
           <span className="w-2 h-2 rounded-full bg-red-500" />
           <span className="font-bold text-app-main capitalize">{activeDay.fullDateLabel}:</span>
           <span className="text-app-muted">
-            {activeDay.count} {activeDay.count === 1 ? 'transaction' : 'transactions'}
+            {activeDay.count} {activeDay.count === 1 ? t('transaction_singular') : t('transaction_plural')}
           </span>
         </div>
 
@@ -198,7 +225,7 @@ export const DailyActivityCard: React.FC<DailyActivityCardProps> = ({ transactio
             </span>
           )}
           {activeDay.income === 0 && activeDay.expense === 0 && (
-            <span className="text-app-muted italic">No activity recorded for this day</span>
+            <span className="text-app-muted italic">0.00€</span>
           )}
         </div>
       </div>

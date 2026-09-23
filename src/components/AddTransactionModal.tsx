@@ -17,9 +17,11 @@ import {
   Check,
   Plus,
   AlertTriangle,
+  RotateCcw,
 } from 'lucide-react';
 import { Transaction, TransactionType } from '../types.ts';
 import { getStoredCustomCategories, saveStoredCustomCategories } from '../services/storage.ts';
+import { useLanguage } from '../services/i18n.ts';
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -47,6 +49,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   onSave,
   onDelete,
 }) => {
+  const { t } = useLanguage();
   const [type, setType] = useState<TransactionType>(initialType);
   const [amountStr, setAmountStr] = useState<string>('');
   const [description, setDescription] = useState<string>('');
@@ -137,7 +140,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       id: transactionToEdit?.id,
       type,
       amount: cleanAmount,
-      description: description.trim() || (isIncome ? 'Income' : 'Expense'),
+      description: description.trim() || (isIncome ? t('record_income') : t('record_expense')),
       date: date || todayIso,
       category: category.trim() || 'Other',
       location: location.trim() || undefined,
@@ -151,6 +154,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     const curr = parseFloat(amountStr.replace(',', '.')) || 0;
     const nextVal = (curr + val).toFixed(2);
     setAmountStr(nextVal.endsWith('.00') ? String(parseInt(nextVal, 10)) : nextVal);
+  };
+
+  const handleClearAmount = () => {
+    setAmountStr('');
   };
 
   const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -192,8 +199,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             />
             <h2 className="text-xs font-mono-code font-bold uppercase tracking-widest text-app-main">
               {isEditing
-                ? `EDIT ${isIncome ? 'INCOME' : 'EXPENSE'} // STONKS`
-                : `RECORD ${isIncome ? 'INCOME' : 'EXPENSE'} // STONKS`}
+                ? isIncome
+                  ? t('modal_edit_title_income')
+                  : t('modal_edit_title_expense')
+                : isIncome
+                ? t('modal_add_title_income')
+                : t('modal_add_title_expense')}
             </h2>
           </div>
           <button
@@ -207,41 +218,82 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-4 no-scrollbar">
-          {/* Badge Tipo: Shows selected type */}
-          <div
-            className={`p-3 rounded-2xl border flex items-center justify-between transition-colors ${
-              isIncome
-                ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400'
-                : 'bg-red-950/20 border-red-500/30 text-red-400'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <div
-                className={`w-7 h-7 rounded-xl flex items-center justify-center ${
-                  isIncome ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+          {/* Requirement: Symmetrical Type Selector Buttons */}
+          <div className="space-y-1.5">
+            <div className="grid grid-cols-2 gap-2.5">
+              {/* Symmetrical Expense Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setType('expense');
+                  if (!categoriesMap.expense.includes(category)) {
+                    setCategory(categoriesMap.expense[0] || 'Other');
+                  }
+                }}
+                className={`py-3 px-4 rounded-2xl border flex items-center justify-center gap-2 font-mono-code text-xs font-bold transition-all cursor-pointer select-none ${
+                  !isIncome
+                    ? 'bg-red-600 text-white border-red-500 shadow-md shadow-red-900/30'
+                    : 'bg-app-subtle border-app text-app-muted hover:text-app-main hover:bg-app-hover'
                 }`}
               >
-                {isIncome ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-              </div>
-              <div>
-                <div className="text-[11px] font-mono-code font-bold uppercase tracking-wider">
-                  {isIncome ? 'RECORD INCOME' : 'RECORD EXPENSE'}
+                <div
+                  className={`w-5 h-5 rounded-lg flex items-center justify-center ${
+                    !isIncome ? 'bg-white/20 text-white' : 'bg-red-500/10 text-red-500'
+                  }`}
+                >
+                  <ArrowDownRight className="w-3.5 h-3.5" />
                 </div>
-                <div className="text-[9px] text-app-muted font-mono-code">
-                  {isIncome ? 'Increases available balance' : 'Deducts from monthly budget'}
+                <span>{t('modal_type_expense')}</span>
+              </button>
+
+              {/* Symmetrical Income Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setType('income');
+                  if (!categoriesMap.income.includes(category)) {
+                    setCategory(categoriesMap.income[0] || 'Other');
+                  }
+                }}
+                className={`py-3 px-4 rounded-2xl border flex items-center justify-center gap-2 font-mono-code text-xs font-bold transition-all cursor-pointer select-none ${
+                  isIncome
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-900/30'
+                    : 'bg-app-subtle border-app text-app-muted hover:text-app-main hover:bg-app-hover'
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 rounded-lg flex items-center justify-center ${
+                    isIncome ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-500'
+                  }`}
+                >
+                  <ArrowUpRight className="w-3.5 h-3.5" />
                 </div>
-              </div>
+                <span>{t('modal_type_income')}</span>
+              </button>
             </div>
-            <span className="font-mono-code text-xs font-bold px-2.5 py-0.5 rounded-full bg-app-card border border-app">
-              {isIncome ? '+ INCOME' : '- EXPENSE'}
-            </span>
+            <div className="text-[10px] text-center font-mono-code text-app-muted">
+              {isIncome ? t('modal_income_desc') : t('modal_expense_desc')}
+            </div>
           </div>
 
-          {/* Amount Input with Currency Symbol */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted block">
-              Amount
-            </label>
+          {/* Amount Input with Symmetrical Digit and Quick Add Keys */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted block font-bold">
+                {t('amount_label')}
+              </label>
+              {amountStr && (
+                <button
+                  type="button"
+                  onClick={handleClearAmount}
+                  className="text-[10px] font-mono-code text-app-muted hover:text-red-500 flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset</span>
+                </button>
+              )}
+            </div>
+
             <div className="relative">
               <span
                 className={`absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-mono-code font-bold ${
@@ -264,20 +316,24 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     setAmountStr(val);
                   }
                 }}
-                className={`w-full bg-app-input border border-app rounded-2xl pl-12 pr-4 py-3 text-3xl font-mono-code font-bold text-app-main placeholder:text-app-muted/40 outline-none transition-colors ${
+                className={`w-full bg-app-input border border-app rounded-2xl pl-12 pr-4 py-3.5 text-3xl font-mono-code font-bold text-app-main placeholder:text-app-muted/30 outline-none transition-colors ${
                   isIncome ? 'focus:border-emerald-500' : 'focus:border-red-500'
                 }`}
               />
             </div>
 
-            {/* Quick Amount Add Pills */}
-            <div className="flex items-center gap-1.5 pt-1 overflow-x-auto no-scrollbar">
+            {/* Requirement: Perfectly Symmetrical Quick Amount Buttons (5 equal columns) */}
+            <div className="grid grid-cols-5 gap-2 pt-1">
               {[5, 10, 20, 50, 100].map((val) => (
                 <button
                   type="button"
                   key={val}
                   onClick={() => handleQuickAdd(val)}
-                  className="px-2.5 py-1 rounded-xl bg-app-subtle hover:bg-app-hover border border-app text-app-sub hover:text-app-main text-[11px] font-mono-code transition-all cursor-pointer shrink-0"
+                  className={`py-2 px-1 rounded-xl border text-center font-mono-code font-bold text-xs transition-all cursor-pointer active:scale-95 flex items-center justify-center ${
+                    isIncome
+                      ? 'bg-emerald-950/20 hover:bg-emerald-950/40 text-emerald-400 border-emerald-500/30'
+                      : 'bg-red-950/20 hover:bg-red-950/40 text-red-400 border-red-500/30'
+                  }`}
                 >
                   +{val}€
                 </button>
@@ -287,13 +343,17 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
           {/* Description */}
           <div className="space-y-1">
-            <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted block">
-              Description
+            <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted block font-bold">
+              {t('description_label')}
             </label>
             <input
               type="text"
               required
-              placeholder={isIncome ? 'e.g. Monthly Salary, Transfer...' : 'e.g. Supermarket, Coffee, Lunch...'}
+              placeholder={
+                isIncome
+                  ? t('description_placeholder_income')
+                  : t('description_placeholder_expense')
+              }
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className={`w-full bg-app-input border border-app rounded-2xl px-4 py-2.5 text-xs font-mono-code text-app-main placeholder:text-app-muted/50 outline-none transition-colors ${
@@ -305,9 +365,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           {/* Category Section with Custom Category Creation */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted flex items-center gap-1">
+              <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted flex items-center gap-1 font-bold">
                 <Tag className="w-3 h-3 text-app-muted" />
-                <span>Category</span>
+                <span>{t('category_label')}</span>
               </label>
               <span className="text-[9px] font-mono-code text-app-muted">
                 {category || 'None'}
@@ -341,7 +401,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   <input
                     type="text"
                     autoFocus
-                    placeholder="New category"
+                    placeholder={t('new_category')}
                     value={newCategoryInput}
                     onChange={(e) => setNewCategoryInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -376,19 +436,19 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   className="px-2.5 py-1 rounded-xl text-[11px] font-mono-code border border-dashed border-app hover:border-app-hover bg-app-card hover:bg-app-hover text-app-muted hover:text-app-main transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <Plus className="w-3 h-3" />
-                  <span>Add</span>
+                  <span>{t('add_category_btn')}</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* Date and Location in two columns */}
+          {/* Date and Location in two symmetrical columns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Date */}
             <div className="space-y-1">
-              <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted flex items-center gap-1">
+              <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted flex items-center gap-1 font-bold">
                 <Calendar className="w-3 h-3 text-app-muted" />
-                <span>Date</span>
+                <span>{t('date_label')}</span>
               </label>
               <input
                 type="date"
@@ -403,13 +463,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
             {/* Optional Location */}
             <div className="space-y-1">
-              <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted flex items-center gap-1">
+              <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted flex items-center gap-1 font-bold">
                 <MapPin className="w-3 h-3 text-app-muted" />
-                <span>Location (Optional)</span>
+                <span>{t('location_label')}</span>
               </label>
               <input
                 type="text"
-                placeholder="e.g. Rome, Supermarket..."
+                placeholder={t('location_placeholder')}
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 className={`w-full bg-app-input border border-app rounded-2xl px-3 py-2 text-xs font-mono-code text-app-main placeholder:text-app-muted/50 outline-none transition-colors ${
@@ -422,9 +482,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           {/* Receipt Attachment Section */}
           <div className="space-y-1.5 pt-1">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted flex items-center gap-1">
+              <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted flex items-center gap-1 font-bold">
                 <ImageIcon className="w-3 h-3 text-app-muted" />
-                <span>Receipt / Invoice (Optional)</span>
+                <span>{t('receipt_label')}</span>
               </label>
               {receiptImage && (
                 <button
@@ -432,7 +492,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   onClick={() => setReceiptImage('')}
                   className="text-[10px] font-mono-code text-red-500 hover:underline cursor-pointer"
                 >
-                  Remove photo
+                  {t('remove_receipt')}
                 </button>
               )}
             </div>
@@ -460,7 +520,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   className="w-full py-2.5 px-3 rounded-2xl border border-dashed border-app bg-app-subtle/50 hover:bg-app-hover text-app-sub text-xs font-mono-code flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <Camera className="w-4 h-4 text-app-muted" />
-                  <span>Upload or take photo of receipt</span>
+                  <span>{t('upload_receipt')}</span>
                 </button>
                 {imageError && (
                   <p className="text-[11px] font-mono-code text-red-500 mt-1 text-center">
@@ -483,10 +543,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               }`}
             >
               <Check className="w-4 h-4 stroke-[2.5]" />
-              <span>{isEditing ? 'Save Changes' : `Record ${isIncome ? 'Income' : 'Expense'}`}</span>
+              <span>{t('btn_save_transaction')}</span>
             </button>
 
-            {/* Robust, Clearly Visible Delete Button with Inline Confirmation */}
+            {/* Symmetrical Inline Delete Confirmation */}
             {isEditing && onDelete && transactionToEdit && (
               <div className="pt-1">
                 {confirmDelete ? (
@@ -494,7 +554,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
                       <span className="text-[11px] font-mono-code text-red-400 font-medium">
-                        Delete this transaction permanently?
+                        {t('confirm_delete_prompt')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -506,14 +566,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                         }}
                         className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-mono-code text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-xs"
                       >
-                        Yes, Delete
+                        {t('delete_action')}
                       </button>
                       <button
                         type="button"
                         onClick={() => setConfirmDelete(false)}
                         className="px-3 py-1.5 rounded-xl bg-app-card border border-app text-app-muted hover:text-app-main font-mono-code text-xs cursor-pointer"
                       >
-                        Cancel
+                        {t('cancel_action')}
                       </button>
                     </div>
                   </div>
@@ -524,7 +584,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     className="w-full py-2.5 rounded-2xl border border-red-500/20 bg-red-950/10 hover:bg-red-950/20 text-red-400 hover:text-red-300 font-mono-code text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98"
                   >
                     <Trash2 className="w-4 h-4 text-red-500" />
-                    <span>Delete Transaction</span>
+                    <span>{t('btn_delete_transaction')}</span>
                   </button>
                 )}
               </div>

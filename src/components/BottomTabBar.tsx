@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { Plus, Activity, PieChart, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { TransactionType } from '../types.ts';
+import { useLanguage } from '../services/i18n.ts';
 
 interface BottomTabBarProps {
   activeView: 'history' | 'reports';
@@ -20,6 +21,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
   onOpenAdd,
   pendingCount,
 }) => {
+  const { t } = useLanguage();
   const [isSpeedDialOpen, setIsSpeedDialOpen] = useState(false);
 
   const handleSelectOption = (type: TransactionType) => {
@@ -51,7 +53,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
               <ArrowDownRight className="w-4 h-4" />
             </span>
             <span className="font-mono-code text-xs font-bold tracking-wider uppercase text-red-500">
-              Expense
+              {t('record_expense')}
             </span>
           </button>
 
@@ -66,7 +68,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
               <ArrowUpRight className="w-4 h-4" />
             </span>
             <span className="font-mono-code text-xs font-bold tracking-wider uppercase text-emerald-500">
-              Income
+              {t('record_income')}
             </span>
           </button>
         </div>
@@ -101,7 +103,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
               )}
             </div>
             <span className="text-[11px] font-mono-code font-bold tracking-wider uppercase mt-1">
-              Activity
+              {t('tab_activity')}
             </span>
             {activeView === 'history' && (
               <span className="absolute -bottom-1 w-2 h-2 rounded-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.85)]" />
@@ -114,7 +116,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
               id="btn-main-add"
               type="button"
               onClick={() => setIsSpeedDialOpen((prev) => !prev)}
-              aria-label="Add transaction"
+              aria-label={t('tab_add')}
               className={`w-13 h-13 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border ${
                 isSpeedDialOpen
                   ? 'bg-app-card text-app-main border-app rotate-45 scale-105'
@@ -141,7 +143,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
           >
             <PieChart className={`w-5.5 h-5.5 sm:w-6 sm:h-6 stroke-[2.2] transition-transform ${activeView === 'reports' ? 'scale-110' : ''}`} />
             <span className="text-[11px] font-mono-code font-bold tracking-wider uppercase mt-1">
-              Reports
+              {t('tab_reports')}
             </span>
             {activeView === 'reports' && (
               <span className="absolute -bottom-1 w-2 h-2 rounded-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.85)]" />

@@ -371,8 +371,6 @@ export default function App() {
               transactions={transactions}
               monthlyBudget={monthlyBudget}
               onUpdateMonthlyBudget={handleUpdateMonthlyBudget}
-              onOpenAdd={(type) => handleOpenAddModal(type || 'expense')}
-              onNavigateReports={() => setActiveView('reports')}
             />
           )}
 

@@ -6,6 +6,7 @@
 import React from 'react';
 import { SlidersHorizontal, RefreshCw } from 'lucide-react';
 import { AppSyncState, UserProfile } from '../types.ts';
+import { useLanguage } from '../services/i18n.ts';
 
 interface HeaderProps {
   syncState: AppSyncState;
@@ -20,6 +21,8 @@ export const Header: React.FC<HeaderProps> = ({
   user,
   onOpenMenu,
 }) => {
+  const { language, t } = useLanguage();
+
   // Dot status indicator
   const getDotStatus = () => {
     if (syncState === 'syncing') {
@@ -49,6 +52,9 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full bg-app-subtle text-app-muted font-mono-code border border-app-subtle font-medium">
                 0ms • v2.6
               </span>
+              <span className="text-[10px] uppercase font-mono-code px-1.5 py-0.5 rounded-md bg-app-card border border-app text-app-muted">
+                {language}
+              </span>
             </div>
             <div className="text-[11px] text-app-muted font-mono-code flex items-center gap-1.5 mt-0.5">
               {user ? (
@@ -70,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
           id="btn-unified-menu"
           onClick={onOpenMenu}
           className="flex items-center gap-2.5 px-4 sm:px-5 py-2.5 rounded-full border border-app bg-app-card hover:bg-app-hover text-app-main font-mono-code text-xs sm:text-sm font-bold transition-all duration-150 active:scale-95 shadow-sm cursor-pointer"
-          title="Settings, Account, Themes, Backup & Export"
+          title="Settings, Account, Themes, Language, Backup & Export"
         >
           {syncState === 'syncing' ? (
             <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
@@ -87,7 +93,7 @@ export const Header: React.FC<HeaderProps> = ({
               />
             </div>
           )}
-          <span className="text-xs sm:text-sm font-bold tracking-wider uppercase">Menu</span>
+          <span className="text-xs sm:text-sm font-bold tracking-wider uppercase">{t('menu')}</span>
           <SlidersHorizontal className="w-4 h-4 text-app-muted" />
         </button>
       </div>

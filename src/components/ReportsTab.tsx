@@ -13,18 +13,11 @@ import {
 } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import {
-  PiggyBank,
-  Calendar,
   Tag,
   ChevronDown,
   ChevronRight,
   Edit2,
   Trash2,
-  TrendingUp,
-  TrendingDown,
-  ArrowUpRight,
-  ArrowDownRight,
-  Sparkles,
   BarChart3,
   Search,
   Filter,
@@ -32,6 +25,7 @@ import {
   X,
 } from 'lucide-react';
 import { Transaction, TimeFilterPeriod } from '../types.ts';
+import { useLanguage } from '../services/i18n.ts';
 
 // Register Chart.js elements
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -49,8 +43,21 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   onEditTransaction,
   onDeleteTransaction,
 }) => {
+  const { language, t } = useLanguage();
   const now = new Date();
   const currentYearStr = String(now.getFullYear());
+
+  const locale = useMemo(() => {
+    return language === 'it'
+      ? 'it-IT'
+      : language === 'es'
+      ? 'es-ES'
+      : language === 'fr'
+      ? 'fr-FR'
+      : language === 'de'
+      ? 'de-DE'
+      : 'en-US';
+  }, [language]);
 
   // Multi-Year & Multi-Month State
   const [selectedYear, setSelectedYear] = useState<string>('all');
@@ -69,9 +76,9 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   // Extract all distinct categories available across transactions
   const allCategories = useMemo(() => {
     const cats = new Set<string>();
-    transactions.forEach((t) => {
-      if (t.category && t.category.trim()) {
-        cats.add(t.category.trim());
+    transactions.forEach((tx) => {
+      if (tx.category && tx.category.trim()) {
+        cats.add(tx.category.trim());
       }
     });
     return Array.from(cats).sort();
@@ -88,9 +95,9 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   const availableYears = useMemo(() => {
     const years = new Set<string>();
     years.add(currentYearStr);
-    transactions.forEach((t) => {
-      if (t.date && t.date.length >= 4) {
-        const yr = t.date.substring(0, 4);
+    transactions.forEach((tx) => {
+      if (tx.date && tx.date.length >= 4) {
+        const yr = tx.date.substring(0, 4);
         if (/^\d{4}$/.test(yr)) {
           years.add(yr);
         }
@@ -99,28 +106,23 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
     return Array.from(years).sort((a, b) => Number(b) - Number(a));
   }, [transactions, currentYearStr]);
 
-  // English Months definition
-  const months = [
-    { id: 'all', short: 'All' },
-    { id: '01', short: 'Jan' },
-    { id: '02', short: 'Feb' },
-    { id: '03', short: 'Mar' },
-    { id: '04', short: 'Apr' },
-    { id: '05', short: 'May' },
-    { id: '06', short: 'Jun' },
-    { id: '07', short: 'Jul' },
-    { id: '08', short: 'Aug' },
-    { id: '09', short: 'Sep' },
-    { id: '10', short: 'Oct' },
-    { id: '11', short: 'Nov' },
-    { id: '12', short: 'Dec' },
-  ];
+  // Localized Months definition
+  const months = useMemo(() => {
+    const list = [{ id: 'all', short: t('filter_all') }];
+    for (let m = 0; m < 12; m++) {
+      const d = new Date(2026, m, 1);
+      const id = String(m + 1).padStart(2, '0');
+      const short = d.toLocaleDateString(locale, { month: 'short' });
+      list.push({ id, short });
+    }
+    return list;
+  }, [locale, t]);
 
   // Filtered data according to chosen year & month
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((t) => {
-      if (!t.date) return true;
-      const [yr, mo] = t.date.split('-');
+    return transactions.filter((tx) => {
+      if (!tx.date) return true;
+      const [yr, mo] = tx.date.split('-');
       if (selectedYear !== 'all' && yr !== selectedYear) return false;
       if (selectedMonth !== 'all' && mo !== selectedMonth) return false;
       return true;
@@ -130,14 +132,14 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   // Aggregates
   const totalIncome = useMemo(() => {
     return filteredTransactions
-      .filter((t) => t.type === 'income')
-      .reduce((s, t) => s + t.amount, 0);
+      .filter((tx) => tx.type === 'income')
+      .reduce((s, tx) => s + tx.amount, 0);
   }, [filteredTransactions]);
 
   const totalExpense = useMemo(() => {
     return filteredTransactions
-      .filter((t) => t.type === 'expense')
-      .reduce((s, t) => s + t.amount, 0);
+      .filter((tx) => tx.type === 'expense')
+      .reduce((s, tx) => s + tx.amount, 0);
   }, [filteredTransactions]);
 
   const netBalance = totalIncome - totalExpense;
@@ -148,17 +150,9 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
       ? Math.max(-100, Math.round(((totalIncome - totalExpense) / totalIncome) * 100))
       : 0;
 
-  const daysCount = useMemo(() => {
-    if (selectedMonth !== 'all') return 30;
-    if (selectedYear !== 'all') return 365;
-    return Math.max(30, availableYears.length * 365);
-  }, [selectedMonth, selectedYear, availableYears]);
-
-  const dailyAverageExpense = totalExpense / daysCount;
-
   // Doughnut Chart Data
   const doughnutData = {
-    labels: ['Income', 'Expenses'],
+    labels: [t('income'), t('expenses')],
     datasets: [
       {
         data: totalVolume > 0 ? [totalIncome, totalExpense] : [1, 1],
@@ -201,10 +195,10 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   // Top Categories
   const categoryMap: Record<string, number> = {};
   filteredTransactions
-    .filter((t) => t.type === 'expense')
-    .forEach((t) => {
-      const cat = t.category || t.description || 'Other';
-      categoryMap[cat] = (categoryMap[cat] || 0) + t.amount;
+    .filter((tx) => tx.type === 'expense')
+    .forEach((tx) => {
+      const cat = tx.category || tx.description || 'Other';
+      categoryMap[cat] = (categoryMap[cat] || 0) + tx.amount;
     });
 
   const sortedCategories = Object.entries(categoryMap)
@@ -212,7 +206,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
     .slice(0, 6);
 
   const formatEUR = (val: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 2,
@@ -222,23 +216,23 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
 
   // Grouped monthly breakdowns
   const groupedMonths = useMemo(() => {
-    const list = filteredTransactions.filter((t) => {
+    const list = filteredTransactions.filter((tx) => {
       // Filter by movement type
-      if (movementTypeFilter !== 'all' && t.type !== movementTypeFilter) return false;
+      if (movementTypeFilter !== 'all' && tx.type !== movementTypeFilter) return false;
 
       // Filter by selected categories
       if (selectedCategories.length > 0) {
-        if (!t.category || !selectedCategories.includes(t.category.trim())) return false;
+        if (!tx.category || !selectedCategories.includes(tx.category.trim())) return false;
       }
 
       // Filter by search query
       if (reportSearchQuery.trim()) {
         const q = reportSearchQuery.toLowerCase();
-        const matchDesc = t.description.toLowerCase().includes(q);
-        const matchCat = t.category && t.category.toLowerCase().includes(q);
-        const matchLoc = t.location && t.location.toLowerCase().includes(q);
-        const matchAmt = t.amount.toString().includes(q);
-        const matchDate = t.date.includes(q);
+        const matchDesc = tx.description.toLowerCase().includes(q);
+        const matchCat = tx.category && tx.category.toLowerCase().includes(q);
+        const matchLoc = tx.location && tx.location.toLowerCase().includes(q);
+        const matchAmt = tx.amount.toString().includes(q);
+        const matchDate = tx.date.includes(q);
         if (!matchDesc && !matchCat && !matchLoc && !matchAmt && !matchDate) return false;
       }
 
@@ -250,21 +244,21 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
       { label: string; items: Transaction[]; netTotal: number }
     > = {};
 
-    list.forEach((t) => {
-      const d = new Date(t.date);
+    list.forEach((tx) => {
+      const d = new Date(tx.date);
       if (isNaN(d.getTime())) return;
-      const key = t.date.substring(0, 7);
-      const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const key = tx.date.substring(0, 7);
+      const label = d.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 
       if (!groups[key]) {
         groups[key] = { label, items: [], netTotal: 0 };
       }
-      groups[key].items.push(t);
-      groups[key].netTotal += t.type === 'income' ? t.amount : -t.amount;
+      groups[key].items.push(tx);
+      groups[key].netTotal += tx.type === 'income' ? tx.amount : -tx.amount;
     });
 
     return groups;
-  }, [filteredTransactions, movementTypeFilter, selectedCategories, reportSearchQuery]);
+  }, [filteredTransactions, movementTypeFilter, selectedCategories, reportSearchQuery, locale]);
 
   const sortedGroupKeys = Object.keys(groupedMonths).sort().reverse();
 
@@ -272,10 +266,10 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
     <div id="tab-reports" className="w-full space-y-4 pb-12">
       {/* 1. Sleek Minimalist Scope Selector */}
       <div className="rounded-3xl border border-app bg-app-card p-3.5 sm:p-4 backdrop-blur-md shadow-sm transition-all space-y-2.5">
-        {/* Year Pills (Horizontal Scroll) */}
+        {/* Year Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
           <span className="text-[10px] font-mono-code uppercase text-app-muted font-bold tracking-wider mr-1 shrink-0">
-            YEAR:
+            {t('filter_year')}:
           </span>
 
           <button
@@ -287,7 +281,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                 : 'text-app-muted hover:text-app-main border border-transparent'
             }`}
           >
-            All Years
+            {t('filter_all')}
           </button>
 
           {availableYears.map((yr) => (
@@ -306,10 +300,10 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
           ))}
         </div>
 
-        {/* Month Pills (Horizontal Scroll) */}
+        {/* Month Pills */}
         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-1.5 border-t border-app-subtle">
           <span className="text-[10px] font-mono-code uppercase text-app-muted font-bold tracking-wider mr-1 shrink-0">
-            MONTH:
+            {t('filter_month')}:
           </span>
           {months.map((m) => {
             const isSelected = selectedMonth === m.id;
@@ -340,10 +334,10 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
             <div className="flex items-center justify-between border-b border-app-subtle pb-3">
               <span className="text-xs font-mono-code font-bold uppercase tracking-wider text-app-main flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-emerald-500" />
-                Cashflow Breakdown
+                {t('breakdown_by_category')}
               </span>
               <span className="text-[10px] font-mono-code text-app-muted">
-                {savingsRate >= 0 ? `+${savingsRate}% saved` : `${savingsRate}%`}
+                {savingsRate >= 0 ? `+${savingsRate}%` : `${savingsRate}%`}
               </span>
             </div>
 
@@ -351,7 +345,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
             <div className="relative h-44 w-full flex items-center justify-center">
               <Doughnut data={doughnutData} options={doughnutOptions} />
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-[10px] font-mono-code uppercase text-app-muted">Net Result</span>
+                <span className="text-[10px] font-mono-code uppercase text-app-muted">{t('net_balance')}</span>
                 <span className={`text-base sm:text-lg font-mono-code font-black ${netBalance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                   {netBalance >= 0 ? '+' : ''}{formatEUR(netBalance)}
                 </span>
@@ -361,13 +355,13 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
             {/* Quick Metrics */}
             <div className="grid grid-cols-2 gap-2 pt-1 border-t border-app-subtle">
               <div className="p-2.5 rounded-xl bg-app-subtle border border-app">
-                <div className="text-[9px] font-mono-code uppercase text-app-muted">Total Income</div>
+                <div className="text-[9px] font-mono-code uppercase text-app-muted">{t('total_inflow')}</div>
                 <div className="text-xs font-mono-code font-bold text-emerald-500 mt-0.5">
                   +{formatEUR(totalIncome)}
                 </div>
               </div>
               <div className="p-2.5 rounded-xl bg-app-subtle border border-app">
-                <div className="text-[9px] font-mono-code uppercase text-app-muted">Total Outflow</div>
+                <div className="text-[9px] font-mono-code uppercase text-app-muted">{t('total_outflow')}</div>
                 <div className="text-xs font-mono-code font-bold text-red-500 mt-0.5">
                   -{formatEUR(totalExpense)}
                 </div>
@@ -381,10 +375,10 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
               <div className="flex items-center justify-between border-b border-app-subtle pb-2.5">
                 <span className="text-xs font-mono-code font-bold uppercase tracking-wider text-app-main flex items-center gap-1.5">
                   <Tag className="w-3.5 h-3.5 text-app-muted" />
-                  Top Spending Categories
+                  {t('breakdown_by_category')}
                 </span>
                 <span className="text-[10px] font-mono-code text-app-muted">
-                  {sortedCategories.length} tracked
+                  {sortedCategories.length}
                 </span>
               </div>
 
@@ -414,7 +408,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
           )}
         </div>
 
-        {/* Right Column: Full Itemized Ledger & Filter Controls (Mobile: full, Tablet: 7/12) */}
+        {/* Right Column: Full Itemized Ledger & Filter Controls */}
         <div className="md:col-span-7 space-y-3">
           {/* Search & Category Filter Controls */}
           <div className="p-3.5 rounded-3xl bg-app-card border border-app space-y-2.5">
@@ -424,7 +418,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                 type="text"
                 value={reportSearchQuery}
                 onChange={(e) => setReportSearchQuery(e.target.value)}
-                placeholder="Search description, category, place, amount..."
+                placeholder={t('search_placeholder')}
                 className="w-full bg-app-subtle border border-app rounded-2xl pl-10 pr-9 py-2 text-xs font-mono-code text-app-main placeholder:text-app-muted/60 outline-none focus:border-red-500 transition-colors"
               />
               {reportSearchQuery && (
@@ -443,19 +437,19 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
               <div className="flex items-center gap-1 shrink-0">
                 {(
                   [
-                    { key: 'all', label: 'All' },
-                    { key: 'expense', label: 'Expenses' },
-                    { key: 'income', label: 'Income' },
+                    { key: 'all', label: t('filter_all') },
+                    { key: 'expense', label: t('expenses') },
+                    { key: 'income', label: t('income') },
                   ] as const
                 ).map((item) => (
                   <button
                     key={item.key}
                     type="button"
                     onClick={() => setMovementTypeFilter(item.key)}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-mono-code transition-all cursor-pointer ${
+                    className={`px-3 py-1 rounded-xl text-[11px] font-mono-code transition-all cursor-pointer ${
                       movementTypeFilter === item.key
-                        ? 'bg-app-card text-app-main border border-emerald-500 font-bold shadow-xs'
-                        : 'bg-app-subtle text-app-muted hover:text-app-main border border-app'
+                        ? 'bg-app-subtle text-app-main font-bold border border-app'
+                        : 'text-app-muted hover:text-app-main'
                     }`}
                   >
                     {item.label}
@@ -463,106 +457,68 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                 ))}
               </div>
 
-              {/* Category Filter Toggle */}
               {allCategories.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setIsCategoryFilterOpen((prev) => !prev)}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono-code border transition-all cursor-pointer ${
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-mono-code border transition-colors cursor-pointer shrink-0 ${
                     selectedCategories.length > 0
-                      ? 'bg-red-600/15 border-red-500/50 text-red-500 font-bold shadow-xs'
-                      : isCategoryFilterOpen
-                      ? 'bg-app-card border-app text-app-main'
+                      ? 'bg-red-950/30 border-red-500/40 text-red-400 font-bold'
                       : 'bg-app-subtle border-app text-app-muted hover:text-app-main'
                   }`}
                 >
                   <Filter className="w-3 h-3" />
-                  <span>
-                    {selectedCategories.length > 0
-                      ? `Categories (${selectedCategories.length})`
-                      : 'Categories'}
-                  </span>
-                  <ChevronDown
-                    className={`w-3 h-3 transition-transform ${
-                      isCategoryFilterOpen ? 'rotate-180' : ''
-                    }`}
-                  />
+                  <span>{t('category_label')}</span>
+                  {selectedCategories.length > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-red-600 text-white text-[9px] flex items-center justify-center font-bold">
+                      {selectedCategories.length}
+                    </span>
+                  )}
                 </button>
               )}
             </div>
 
-            {/* Category Dropdown Selection Panel */}
+            {/* Category Dropdown Multi-Select */}
             {isCategoryFilterOpen && allCategories.length > 0 && (
-              <div className="p-3 rounded-2xl bg-app-subtle border border-app space-y-2 animate-in fade-in">
-                <div className="flex items-center justify-between text-[11px] font-mono-code">
-                  <span className="text-app-muted font-bold uppercase tracking-wider text-[10px]">
-                    Filter by Categories
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {selectedCategories.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedCategories([])}
-                        className="text-[10px] text-red-400 hover:underline cursor-pointer"
-                      >
-                        Reset
-                      </button>
-                    )}
+              <div className="pt-2 border-t border-app-subtle flex flex-wrap gap-1.5 animate-in fade-in">
+                {allCategories.map((cat) => {
+                  const isSelected = selectedCategories.includes(cat);
+                  return (
                     <button
+                      key={cat}
                       type="button"
-                      onClick={() =>
-                        setSelectedCategories(
-                          selectedCategories.length === allCategories.length ? [] : [...allCategories]
-                        )
-                      }
-                      className="text-[10px] text-emerald-400 hover:underline cursor-pointer"
+                      onClick={() => toggleCategory(cat)}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-mono-code transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-red-600 text-white font-bold'
+                          : 'bg-app-subtle text-app-muted hover:text-app-main border border-app'
+                      }`}
                     >
-                      {selectedCategories.length === allCategories.length ? 'Deselect all' : 'Select all'}
+                      {cat}
                     </button>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto no-scrollbar pt-1">
-                  {allCategories.map((cat) => {
-                    const isSelected = selectedCategories.includes(cat);
-                    return (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => toggleCategory(cat)}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-mono-code transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-red-600 text-white font-bold shadow-xs'
-                            : 'bg-app-card text-app-muted hover:text-app-main border border-app'
-                        }`}
-                      >
-                        {isSelected && <Check className="w-3 h-3" />}
-                        <span>{cat}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                  );
+                })}
               </div>
             )}
           </div>
 
-          {/* Month Accordion List */}
-          <div className="space-y-2">
+          {/* Ledger Months List */}
+          <div className="space-y-2.5">
             {sortedGroupKeys.length === 0 ? (
-              <div className="text-center py-10 border border-dashed border-app rounded-3xl bg-app-card/60 p-6 text-app-muted text-xs font-mono-code">
-                No transactions found for the selected timeframe and filters.
+              <div className="p-8 rounded-3xl bg-app-card border border-app text-center text-app-muted font-mono-code text-xs">
+                {t('no_transactions_found')}
               </div>
             ) : (
               sortedGroupKeys.map((key) => {
                 const group = groupedMonths[key];
-                // Default expanded for current / first month if only 1, otherwise user controls
-                const isExpanded = expandedMonths[key] ?? (sortedGroupKeys.length === 1);
+                const isExpanded = expandedMonths[key] !== false; // expanded by default
 
                 return (
                   <div
                     key={key}
                     className="rounded-2xl border border-app bg-app-card overflow-hidden shadow-xs"
                   >
+                    {/* Month Group Header */}
                     <button
                       type="button"
                       onClick={() =>
@@ -571,7 +527,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                           [key]: !isExpanded,
                         }))
                       }
-                      className="w-full px-4 py-3 flex items-center justify-between hover:bg-app-subtle transition-colors text-left cursor-pointer"
+                      className="w-full p-3.5 flex items-center justify-between gap-3 text-left hover:bg-app-subtle/50 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
                         {isExpanded ? (
@@ -634,13 +590,13 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                                     type="button"
                                     onClick={() => onEditTransaction(item)}
                                     className="p-1.5 rounded-lg text-app-muted hover:text-app-main hover:bg-app-card transition-colors cursor-pointer"
-                                    title="Edit Transaction"
+                                    title={t('edit')}
                                   >
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
                                 )}
 
-                                {/* Robust Delete Button with Inline Confirmation (Requirement: sistemare tasto elimina) */}
+                                {/* Delete Button with Inline Confirmation */}
                                 {onDeleteTransaction && (
                                   <>
                                     {isConfirming ? (
@@ -652,16 +608,16 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                                             setConfirmDeleteId(null);
                                           }}
                                           className="px-2 py-0.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-[10px] font-mono-code font-bold transition-all cursor-pointer flex items-center gap-0.5 active:scale-95"
-                                          title="Confirm Delete"
+                                          title={t('confirm_delete')}
                                         >
                                           <Check className="w-3 h-3" />
-                                          <span>Delete</span>
+                                          <span>{t('delete_action')}</span>
                                         </button>
                                         <button
                                           type="button"
                                           onClick={() => setConfirmDeleteId(null)}
                                           className="p-1 text-app-muted hover:text-app-main transition-colors cursor-pointer"
-                                          title="Cancel"
+                                          title={t('cancel_action')}
                                         >
                                           <X className="w-3 h-3" />
                                         </button>
@@ -671,7 +627,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                                         type="button"
                                         onClick={() => setConfirmDeleteId(item.id)}
                                         className="p-1.5 rounded-lg text-app-muted hover:text-red-500 hover:bg-red-950/20 transition-colors cursor-pointer"
-                                        title="Delete Transaction"
+                                        title={t('delete')}
                                       >
                                         <Trash2 className="w-3.5 h-3.5" />
                                       </button>
