@@ -5,6 +5,7 @@
 
 import { AppConfig, QueueItem, SyncStatus, ThemeMode, Transaction } from '../types.ts';
 import { secureStorage } from './secureStorage.ts';
+import { getDefaultCategories, localizeCategory, getStoredLanguage, SupportedLanguage } from './i18n.ts';
 
 const STORAGE_KEYS = {
   TRANSACTIONS: 'stonks_transactions_v2',
@@ -95,13 +96,16 @@ export function updateTransactionLocal(updatedTx: Transaction): Transaction {
   const dateIso = sanitizeDate(updatedTx.date);
   const amount = sanitizeAmount(updatedTx.amount);
   const month = extractMonth(dateIso);
+  const cleanCategory = updatedTx.category ? localizeCategory(updatedTx.category) : '';
+  const finalDesc = (updatedTx.description || '').trim() || cleanCategory || (updatedTx.type === 'income' ? 'Entrata' : 'Uscita');
 
   const cleanTx: Transaction = {
     ...updatedTx,
     date: dateIso,
     amount,
     month,
-    description: (updatedTx.description || '').trim() || (updatedTx.type === 'income' ? 'Entrata' : 'Uscita'),
+    category: cleanCategory,
+    description: finalDesc,
   };
 
   const idx = existing.findIndex((t) => t.id === cleanTx.id);
@@ -180,15 +184,17 @@ export function addTransactionLocal(raw: {
   const amount = sanitizeAmount(raw.amount);
   const month = raw.month || extractMonth(dateIso);
   const id = raw.id || generateUUID();
+  const cleanCategory = raw.category ? localizeCategory(raw.category) : '';
+  const finalDesc = (raw.description || '').trim() || cleanCategory || (raw.type === 'income' ? 'Entrata' : 'Uscita');
 
   const transaction: Transaction = {
     id,
     date: dateIso,
     type: raw.type,
-    description: (raw.description || '').trim() || (raw.type === 'income' ? 'Entrata' : 'Uscita'),
+    description: finalDesc,
     amount,
     month,
-    category: raw.category || '',
+    category: cleanCategory,
     location: raw.location || '',
     receiptImage: raw.receiptImage || '',
     syncStatus: 'pending',
@@ -292,21 +298,39 @@ export function saveStoredTheme(theme: ThemeMode): void {
   } catch {}
 }
 
-// Custom categories storage
-export function getStoredCustomCategories(): { expense: string[]; income: string[] } {
+// Custom categories storage with multi-language synchronization
+export function getStoredCustomCategories(lang?: SupportedLanguage): { expense: string[]; income: string[] } {
+  const currentLang = lang || getStoredLanguage();
+  const defaultCats = getDefaultCategories(currentLang);
+
   try {
     const raw = secureStorage.getItem(STORAGE_KEYS.CUSTOM_CATEGORIES);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.expense) && Array.isArray(parsed.income)) {
-        return parsed;
+        // Check if legacy English defaults
+        const isLegacyEnglish =
+          parsed.expense.includes('Groceries') &&
+          parsed.expense.includes('Dining Out') &&
+          parsed.income.includes('Salary');
+
+        if (isLegacyEnglish && currentLang !== 'en') {
+          return defaultCats;
+        }
+
+        // Localize standard category names to current language and keep user custom categories intact
+        const localizedExpense = parsed.expense.map((c: string) => localizeCategory(c, currentLang));
+        const localizedIncome = parsed.income.map((c: string) => localizeCategory(c, currentLang));
+
+        return {
+          expense: Array.from(new Set(localizedExpense)),
+          income: Array.from(new Set(localizedIncome)),
+        };
       }
     }
   } catch {}
-  return {
-    expense: ['Groceries', 'Dining Out', 'Transport', 'Housing', 'Bills & Utilities', 'Entertainment', 'Health', 'Shopping', 'Other'],
-    income: ['Salary', 'Transfer', 'Investments', 'Refund', 'Freelance', 'Bonus', 'Other'],
-  };
+
+  return defaultCats;
 }
 
 export function saveStoredCustomCategories(cats: { expense: string[]; income: string[] }): void {

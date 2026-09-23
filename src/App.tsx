@@ -36,6 +36,7 @@ import {
 import { syncManager } from './services/syncManager.ts';
 import { firebaseSyncService } from './services/firebaseSync.ts';
 import { triggerTransactionEffect } from './services/stonksEffect.ts';
+import { StonksOverlay } from './components/StonksOverlay.tsx';
 
 export default function App() {
   // Navigation: 'history' (Movimenti) or 'reports' (Report & Analisi)
@@ -242,7 +243,7 @@ export default function App() {
       setTransactions((prev) => [transaction, ...prev]);
 
       // Sound and animation triggered specifically when adding an income or expense
-      triggerTransactionEffect(data.type);
+      triggerTransactionEffect(data.type, data.amount, data.description);
 
       // Background Firestore write
       firebaseSyncService.saveTransaction(transaction).catch(console.warn);
@@ -445,6 +446,9 @@ export default function App() {
         transactions={transactions}
         onImportTransactions={handleBatchImport}
       />
+
+      {/* Celebratory Stonks Meme Animation & Sound Overlay */}
+      <StonksOverlay />
     </div>
   );
 }

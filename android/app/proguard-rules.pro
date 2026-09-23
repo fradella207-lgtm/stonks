@@ -1,7 +1,6 @@
 # R8 / ProGuard rules for Stonks Android Release Build
-# Ensures high performance, lightweight apk/aab, and code obfuscation
+# Optimizes bytecode without interfering with web assets or Vite scripts
 
-# Optimization settings
 -repackageclasses
 -allowaccessmodification
 
@@ -13,19 +12,21 @@
     public static int i(...);
 }
 
-# Keep Android WebKit and JavaScript Interface methods for secure native bridge
--keepattributes JavascriptInterface
+# Preserve Android WebKit and JavaScript Interface methods for secure native bridge
+-keepattributes JavascriptInterface,EnclosingMethod,InnerClasses,Signature,*Annotation*
 -keepclassmembers class * {
     @android.webkit.JavascriptInterface <methods>;
 }
 
-# Keep native Bridge classes
+# Keep native Bridge classes intact
 -keep class com.stonks.app.** { *; }
 
-# Keep AndroidX Security Crypto components
+# Keep AndroidX WebKit AssetLoader and Security Crypto components
+-keep class androidx.webkit.** { *; }
+-keep interface androidx.webkit.** { *; }
 -keep class androidx.security.crypto.** { *; }
 
-# Keep Kotlin Coroutines and reflection safe
--keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
+# Suppress harmless warnings for non-critical classes
+-dontwarn androidx.webkit.**
 -dontwarn java.lang.invoke.**
 -dontwarn javax.annotation.**

@@ -5,15 +5,30 @@
 
 import confetti from 'canvas-confetti';
 
+export interface StonksEventData {
+  type: 'stonks' | 'not-stonks';
+  amount?: number;
+  description?: string;
+}
+
+type StonksEventListener = (event: StonksEventData) => void;
+const listeners = new Set<StonksEventListener>();
+
+export function onStonksTriggered(listener: StonksEventListener): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 // Global tracker for net monthly balance before recalculation or month switch
 let previousNetState: number | null = null;
-let dismissTimer: ReturnType<typeof setTimeout> | null = null;
 let audioContext: AudioContext | null = null;
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
   if (!audioContext) {
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (AudioCtx) {
       audioContext = new AudioCtx();
     }
@@ -34,24 +49,24 @@ function synthesizeStonksChime(): void {
     if (!ctx) return;
 
     const now = ctx.currentTime;
-    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6 (Ascending major victory)
+    const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5]; // C5, E5, G5, C6, E6
 
     notes.forEach((freq, index) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, now + index * 0.08);
+      osc.type = index === notes.length - 1 ? 'sine' : 'triangle';
+      osc.frequency.setValueAtTime(freq, now + index * 0.07);
 
-      gain.gain.setValueAtTime(0.001, now + index * 0.08);
-      gain.gain.exponentialRampToValueAtTime(0.25, now + index * 0.08 + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.08 + 0.4);
+      gain.gain.setValueAtTime(0.001, now + index * 0.07);
+      gain.gain.exponentialRampToValueAtTime(0.3, now + index * 0.07 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.07 + 0.45);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
-      osc.start(now + index * 0.08);
-      osc.stop(now + index * 0.08 + 0.45);
+      osc.start(now + index * 0.07);
+      osc.stop(now + index * 0.07 + 0.5);
     });
   } catch (err) {
     console.warn('Stonks chime synth error:', err);
@@ -72,47 +87,20 @@ function synthesizeNotStonksDecline(): void {
 
     osc.type = 'sawtooth';
     // Pitch falls down in disappointment
-    osc.frequency.setValueAtTime(320, now);
-    osc.frequency.exponentialRampToValueAtTime(140, now + 0.6);
+    osc.frequency.setValueAtTime(340, now);
+    osc.frequency.exponentialRampToValueAtTime(110, now + 0.65);
 
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.75);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
     osc.start(now);
-    osc.stop(now + 0.75);
+    osc.stop(now + 0.8);
   } catch (err) {
     console.warn('Not Stonks synth error:', err);
   }
-}
-
-/**
- * Evaluates whether the Stonks or Not Stonks effect should trigger.
- * - If transitioning from <= 0 to > 0: STONKS (positive)
- * - If transitioning from >= 0 to < 0: NOT STONKS (negative)
- *
- * @param currentNet - The newly calculated net monthly balance (income - expense)
- * @param isInitialMount - If true, initializes baseline without triggering
- */
-export function triggerStonksIfPositive(currentNet: number, isInitialMount: boolean = false): void {
-  if (isInitialMount || previousNetState === null) {
-    previousNetState = currentNet;
-    return;
-  }
-
-  // Case 1: Transition into positive (Net > 0 from <= 0) -> STONKS Chime & Confetti
-  if (previousNetState <= 0 && currentNet > 0) {
-    playStonksAudio();
-    launchStonksConfetti();
-  }
-  // Case 2: Transition into negative (Net < 0 from >= 0) -> Decline sound
-  else if (previousNetState >= 0 && currentNet < 0) {
-    playNotStonksAudio();
-  }
-
-  previousNetState = currentNet;
 }
 
 /**
@@ -162,7 +150,7 @@ export function playNotStonksAudio(): void {
  */
 export function launchStonksConfetti(): void {
   try {
-    const confettiFunc = (window as any).confetti || confetti;
+    const confettiFunc = (window as unknown as { confetti?: typeof confetti }).confetti || confetti;
     if (typeof confettiFunc === 'function') {
       confettiFunc({
         particleCount: 90,
@@ -177,22 +165,51 @@ export function launchStonksConfetti(): void {
 }
 
 /**
- * Displays feedback modal if present (safe no-op if omitted for minimal UI)
+ * Displays meme modal and plays audio + animation
  */
-export function showMemeModal(_type: 'stonks' | 'not-stonks'): void {
-  // Meme overlay modal removed in favor of clean Nothing OS minimalism and splash screen
-}
-
-/**
- * Explicitly triggers celebration or alert when adding an income or expense
- */
-export function triggerTransactionEffect(type: 'income' | 'expense'): void {
-  if (type === 'income') {
+export function showMemeModal(type: 'stonks' | 'not-stonks', amount?: number, description?: string): void {
+  if (type === 'stonks') {
     playStonksAudio();
     launchStonksConfetti();
   } else {
     playNotStonksAudio();
   }
+
+  listeners.forEach((cb) => {
+    try {
+      cb({ type, amount, description });
+    } catch (e) {
+      console.warn('Stonks listener error:', e);
+    }
+  });
+}
+
+/**
+ * Explicitly triggers celebration or alert when adding an income or expense
+ */
+export function triggerTransactionEffect(type: 'income' | 'expense', amount?: number, description?: string): void {
+  showMemeModal(type === 'income' ? 'stonks' : 'not-stonks', amount, description);
+}
+
+/**
+ * Evaluates whether the Stonks or Not Stonks effect should trigger based on balance change.
+ */
+export function triggerStonksIfPositive(currentNet: number, isInitialMount: boolean = false): void {
+  if (isInitialMount || previousNetState === null) {
+    previousNetState = currentNet;
+    return;
+  }
+
+  // Case 1: Transition into positive (Net > 0 from <= 0) -> STONKS Chime & Confetti
+  if (previousNetState <= 0 && currentNet > 0) {
+    showMemeModal('stonks');
+  }
+  // Case 2: Transition into negative (Net < 0 from >= 0) -> Decline sound
+  else if (previousNetState >= 0 && currentNet < 0) {
+    showMemeModal('not-stonks');
+  }
+
+  previousNetState = currentNet;
 }
 
 /**

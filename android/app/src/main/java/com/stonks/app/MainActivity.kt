@@ -9,25 +9,29 @@ import android.view.WindowInsetsController
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import androidx.webkit.WebViewAssetLoader
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private lateinit var assetLoader: WebViewAssetLoader
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        // Nothing OS immersive aesthetic: transparent status & navigation bar
+        // Stile moderno: status & navigation bar trasparenti con sfondo scuro
         window.statusBarColor = Color.TRANSPARENT
         window.navigationBarColor = Color.parseColor("#09090b")
         window.decorView.setBackgroundColor(Color.parseColor("#09090b"))
@@ -54,8 +58,6 @@ class MainActivity : AppCompatActivity() {
         }
         setContentView(webView)
 
-        // Web app handles insets via viewport-fit=cover and CSS env(safe-area-inset-*).
-        // Zero padding on WebView prevents white system background under navigation bar.
         ViewCompat.setOnApplyWindowInsetsListener(webView) { v, insets ->
             v.setPadding(0, 0, 0, 0)
             insets
@@ -68,24 +70,41 @@ class MainActivity : AppCompatActivity() {
         webSettings.loadsImagesAutomatically = true
         webSettings.cacheMode = WebSettings.LOAD_DEFAULT
 
-        // Hardened sandbox security: disable access to local file system and content providers
+        // Sandbox di sicurezza: blocco accessi a file system e content provider
         webSettings.allowFileAccess = false
         webSettings.allowContentAccess = false
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+        @Suppress("DEPRECATION")
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             webSettings.allowFileAccessFromFileURLs = false
             webSettings.allowUniversalAccessFromFileURLs = false
         }
 
-        // Register secure native bridge for hardware-backed EncryptedSharedPreferences
+        // Bridge nativo per hardware-backed EncryptedSharedPreferences (AES-256 GCM)
         webView.addJavascriptInterface(AndroidSecurityBridge(this), "AndroidBridge")
 
-        // Secure WebViewClient: Enforce strict HTTPS connections only
+        // Inizializza WebViewAssetLoader: serve gli asset di dist su HTTPS virtuale sicuro
+        assetLoader = WebViewAssetLoader.Builder()
+            .setDomain("appassets.androidplatform.net")
+            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+            .addPathHandler("/res/", WebViewAssetLoader.ResourcesPathHandler(this))
+            .build()
+
         webView.webViewClient = object : WebViewClient() {
+            override fun shouldInterceptRequest(
+                view: WebView?,
+                request: WebResourceRequest?
+            ): WebResourceResponse? {
+                request?.url?.let { uri ->
+                    val response = assetLoader.shouldInterceptRequest(uri)
+                    if (response != null) return response
+                }
+                return super.shouldInterceptRequest(view, request)
+            }
+
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val url = request?.url?.toString() ?: return false
-                // Reject any unencrypted HTTP scheme navigation
                 if (url.startsWith("http://")) {
-                    return true
+                    return true // Blocca HTTP non sicuro
                 }
                 return false
             }
@@ -93,23 +112,22 @@ class MainActivity : AppCompatActivity() {
 
         webView.webChromeClient = WebChromeClient()
 
-        // Sostituisci con l'URL di deployment del tuo Stonks
-        webView.loadUrl("https://stonks.app")
+        // Caricamento sicuro offline e online tramite dominio virtuale HTTPS
+        webView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
+
+        // CORREZIONE CRITICA: Gestione corretta e moderna del tasto indietro (Back Press API)
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (webView.canGoBack()) {
+                    webView.goBack()
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
     }
 
-    override fun onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            super.onBackPressed()
-        }
-    }
-
-    /**
-     * Native Android Security Bridge
-     * Provides hardware-backed AES-256 GCM encrypted storage via AndroidX Security Crypto MasterKey.
-     * Accessible by JavaScript only on native Android, leaving web environments completely untouched.
-     */
     inner class AndroidSecurityBridge(context: Context) {
         private val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -124,14 +142,10 @@ class MainActivity : AppCompatActivity() {
         )
 
         @JavascriptInterface
-        fun getPlatform(): String {
-            return "android_native"
-        }
+        fun getPlatform(): String = "android_native"
 
         @JavascriptInterface
-        fun isNativeApp(): Boolean {
-            return true
-        }
+        fun isNativeApp(): Boolean = true
 
         @JavascriptInterface
         fun encryptAndStore(key: String, value: String): Boolean {

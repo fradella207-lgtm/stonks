@@ -49,7 +49,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   onSave,
   onDelete,
 }) => {
-  const { t } = useLanguage();
+  const { t, language, localizeCategory } = useLanguage();
   const [type, setType] = useState<TransactionType>(initialType);
   const [amountStr, setAmountStr] = useState<string>('');
   const [description, setDescription] = useState<string>('');
@@ -62,9 +62,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Dynamic custom categories
+  // Dynamic custom categories localized to current language
   const [categoriesMap, setCategoriesMap] = useState<{ expense: string[]; income: string[] }>(() =>
-    getStoredCustomCategories()
+    getStoredCustomCategories(language)
   );
   const [isAddingCategory, setIsAddingCategory] = useState<boolean>(false);
   const [newCategoryInput, setNewCategoryInput] = useState<string>('');
@@ -75,15 +75,15 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setConfirmDelete(false);
       setIsAddingCategory(false);
       setNewCategoryInput('');
-      const loadedCategories = getStoredCustomCategories();
+      const loadedCategories = getStoredCustomCategories(language);
       setCategoriesMap(loadedCategories);
 
       if (transactionToEdit) {
         setType(transactionToEdit.type);
         setAmountStr(String(transactionToEdit.amount));
-        setDescription(transactionToEdit.description);
+        setDescription(transactionToEdit.description || '');
         setDate(transactionToEdit.date);
-        setCategory(transactionToEdit.category || '');
+        setCategory(transactionToEdit.category ? localizeCategory(transactionToEdit.category) : '');
         setLocation(transactionToEdit.location || '');
         setReceiptImage(transactionToEdit.receiptImage || '');
       } else {
@@ -92,12 +92,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setDescription('');
         setDate(todayIso);
         const defaultList = initialType === 'expense' ? loadedCategories.expense : loadedCategories.income;
-        setCategory(defaultList[0] || 'Other');
+        const initialCategory = defaultList[0] || (initialType === 'income' ? 'Stipendio' : 'Alimentari');
+        setCategory(localizeCategory(initialCategory));
         setLocation('');
         setReceiptImage('');
       }
     }
-  }, [isOpen, initialType, transactionToEdit]);
+  }, [isOpen, initialType, transactionToEdit, language]);
 
   if (!isOpen) return null;
 
@@ -114,7 +115,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     }
 
     const targetKey = isIncome ? 'income' : 'expense';
-    const exists = currentCategories.some((c) => c.toLowerCase() === trimmed.toLowerCase());
+    const exists = currentCategories.some(
+      (c) => c.toLowerCase() === trimmed.toLowerCase() || localizeCategory(c).toLowerCase() === trimmed.toLowerCase()
+    );
     if (!exists) {
       const updated = {
         ...categoriesMap,
@@ -136,13 +139,17 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     const cleanAmount = parseFloat(amountStr.replace(',', '.'));
     if (isNaN(cleanAmount) || cleanAmount <= 0) return;
 
+    const chosenCategory = category.trim() ? localizeCategory(category.trim()) : (isIncome ? 'Stipendio' : 'Alimentari');
+    // Description is optional: if left empty, defaults to the selected category or localized transaction type
+    const finalDescription = description.trim() || chosenCategory || (isIncome ? t('record_income') : t('record_expense'));
+
     onSave({
       id: transactionToEdit?.id,
       type,
       amount: cleanAmount,
-      description: description.trim() || (isIncome ? t('record_income') : t('record_expense')),
+      description: finalDescription,
       date: date || todayIso,
-      category: category.trim() || 'Other',
+      category: chosenCategory,
       location: location.trim() || undefined,
       receiptImage: receiptImage || undefined,
     });
@@ -218,62 +225,38 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-4 no-scrollbar">
-          {/* Requirement: Symmetrical Type Selector Buttons */}
-          <div className="space-y-1.5">
-            <div className="grid grid-cols-2 gap-2.5">
-              {/* Symmetrical Expense Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  setType('expense');
-                  if (!categoriesMap.expense.includes(category)) {
-                    setCategory(categoriesMap.expense[0] || 'Other');
-                  }
-                }}
-                className={`py-3 px-4 rounded-2xl border flex items-center justify-center gap-2 font-mono-code text-xs font-bold transition-all cursor-pointer select-none ${
-                  !isIncome
-                    ? 'bg-red-600 text-white border-red-500 shadow-md shadow-red-900/30'
-                    : 'bg-app-subtle border-app text-app-muted hover:text-app-main hover:bg-app-hover'
+          {/* Locked Type Status Indicator - Dedicated single-purpose entry without confusing toggle menu */}
+          <div
+            className={`py-3 px-4 rounded-2xl border flex items-center justify-between transition-colors ${
+              isIncome
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                : 'bg-red-500/10 border-red-500/30 text-red-400'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-white shadow-xs ${
+                  isIncome ? 'bg-emerald-600' : 'bg-red-600'
                 }`}
               >
-                <div
-                  className={`w-5 h-5 rounded-lg flex items-center justify-center ${
-                    !isIncome ? 'bg-white/20 text-white' : 'bg-red-500/10 text-red-500'
-                  }`}
-                >
-                  <ArrowDownRight className="w-3.5 h-3.5" />
-                </div>
-                <span>{t('modal_type_expense')}</span>
-              </button>
-
-              {/* Symmetrical Income Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  setType('income');
-                  if (!categoriesMap.income.includes(category)) {
-                    setCategory(categoriesMap.income[0] || 'Other');
-                  }
-                }}
-                className={`py-3 px-4 rounded-2xl border flex items-center justify-center gap-2 font-mono-code text-xs font-bold transition-all cursor-pointer select-none ${
-                  isIncome
-                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-900/30'
-                    : 'bg-app-subtle border-app text-app-muted hover:text-app-main hover:bg-app-hover'
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 rounded-lg flex items-center justify-center ${
-                    isIncome ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-500'
-                  }`}
-                >
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </div>
-                <span>{t('modal_type_income')}</span>
-              </button>
+                {isIncome ? <ArrowUpRight className="w-4 h-4 stroke-[2.5]" /> : <ArrowDownRight className="w-4 h-4 stroke-[2.5]" />}
+              </div>
+              <div>
+                <span className="font-mono-code text-xs font-bold uppercase tracking-wider block">
+                  {isIncome ? t('record_income') : t('record_expense')}
+                </span>
+                <span className="text-[10px] font-mono-code text-app-muted">
+                  {isIncome ? t('modal_income_desc') : t('modal_expense_desc')}
+                </span>
+              </div>
             </div>
-            <div className="text-[10px] text-center font-mono-code text-app-muted">
-              {isIncome ? t('modal_income_desc') : t('modal_expense_desc')}
-            </div>
+            <span
+              className={`font-mono-code text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-widest ${
+                isIncome ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'
+              }`}
+            >
+              {isIncome ? 'ENTRATA' : 'USCITA'}
+            </span>
           </div>
 
           {/* Amount Input with Symmetrical Digit and Quick Add Keys */}
@@ -341,14 +324,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             </div>
           </div>
 
-          {/* Description */}
+          {/* Description (Optional) */}
           <div className="space-y-1">
             <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted block font-bold">
-              {t('description_label')}
+              {t('description_label_optional')}
             </label>
             <input
               type="text"
-              required
               placeholder={
                 isIncome
                   ? t('description_placeholder_income')
@@ -370,18 +352,21 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 <span>{t('category_label')}</span>
               </label>
               <span className="text-[9px] font-mono-code text-app-muted">
-                {category || 'None'}
+                {category ? localizeCategory(category) : 'None'}
               </span>
             </div>
 
             <div className="flex flex-wrap gap-1.5 items-center">
               {currentCategories.map((cat) => {
-                const isSelected = category.toLowerCase() === cat.toLowerCase();
+                const localized = localizeCategory(cat);
+                const isSelected =
+                  category.toLowerCase() === cat.toLowerCase() ||
+                  category.toLowerCase() === localized.toLowerCase();
                 return (
                   <button
                     type="button"
                     key={cat}
-                    onClick={() => setCategory(cat)}
+                    onClick={() => setCategory(localized)}
                     className={`px-2.5 py-1 rounded-xl text-[11px] font-mono-code transition-all cursor-pointer ${
                       isSelected
                         ? isIncome
@@ -390,7 +375,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                         : 'bg-app-subtle text-app-sub hover:text-app-main border border-app'
                     }`}
                   >
-                    {cat}
+                    {localized}
                   </button>
                 );
               })}

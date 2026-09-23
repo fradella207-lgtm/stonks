@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="it" class="dark" style="background-color: #09090b; color-scheme: dark;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>stonks</title>
+    <meta name="description" content="Gestione spese ed entrate con design leggero in stile Nothing OS, statistiche avanzate, temi personalizzabili, import/export CSV/JSON e sincronizzazione cloud." />
+    <meta property="og:title" content="stonks" />
+    <meta property="og:description" content="Gestione spese ed entrate con design leggero in stile Nothing OS, statistiche avanzate, temi personalizzabili, import/export CSV/JSON e sincronizzazione cloud." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#09090b" id="meta-theme-color" />
+    <meta name="color-scheme" content="dark" id="meta-color-scheme" />
+    <meta name="navigation-bar-color" content="#09090b" />
+    <meta name="msapplication-navbutton-color" content="#09090b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('stonks_theme_mode');
+          var isLight = saved === 'light';
+          var isBlack = saved === 'black';
+          var color = isLight ? '#ffffff' : (isBlack ? '#000000' : '#09090b');
+          var scheme = isLight ? 'light' : 'dark';
+          document.documentElement.className = (isLight ? 'light ' : 'dark ') + 'theme-' + (saved || 'dark');
+          document.documentElement.style.backgroundColor = color;
+          document.documentElement.style.colorScheme = scheme;
+          var metaTheme = document.getElementById('meta-theme-color');
+          if (metaTheme) metaTheme.setAttribute('content', color);
+          var metaScheme = document.getElementById('meta-color-scheme');
+          if (metaScheme) metaScheme.setAttribute('content', scheme);
+        } catch(e) {}
+      })();
+    </script>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/icona.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>@keyframes splashLogoPulse{0%,to{transform:scale(1);box-shadow:0 0 25px #10b98126}50%{transform:scale(1.04);box-shadow:0 0 40px #10b98159}}@keyframes splashDotPulse{0%,to{opacity:.25;transform:scale(.85)}50%{opacity:1;transform:scale(1.25)}}</style>
+    <script type="module" crossorigin src="/assets/index-CbrwoZlR.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BSLKnr_B.css">
+  </head>
+  <body class="bg-app-canvas text-app-main antialiased selection:bg-red-600 selection:text-white min-h-screen" style="background-color: #09090b;">
+    <!-- Entry Splash Screen with Stonks Glyph Logo (0ms First Paint, Nothing OS minimalist aesthetic) -->
+    <div id="app-splash" style="position: fixed; inset: 0; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #09090b; transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s ease;">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
+        <div style="position: relative; width: 76px; height: 76px; border-radius: 24px; background: #121216; border: 1px solid rgba(16, 185, 129, 0.4); box-shadow: 0 0 35px rgba(16, 185, 129, 0.2); display: flex; align-items: center; justify-content: center; animation: splashLogoPulse 2s infinite ease-in-out;">
+          <img src="/icona.svg" alt="stonks logo" style="width: 54px; height: 54px; object-fit: contain;" />
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 800; letter-spacing: 0.28em; text-transform: uppercase; color: #fafafa;">STONKS</span>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background-color: #ef4444; animation: splashDotPulse 1.2s infinite ease-in-out;"></span>
+            <span style="width: 6px; height: 6px; border-radius: 50%; background-color: #ef4444; animation: splashDotPulse 1.2s infinite ease-in-out 0.2s;"></span>
+            <span style="width: 6px; height: 6px; border-radius: 50%; background-color: #ef4444; animation: splashDotPulse 1.2s infinite ease-in-out 0.4s;"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="root"></div>
+
+    <!-- Audio elements for celebratory soundscapes -->
+    <audio id="stonksAudio" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" class="hidden"></audio>
+    <audio id="notStonksAudio" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2578/2578-preview.mp3" class="hidden"></audio>
+
+  </body>
+</html>
+

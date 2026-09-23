@@ -153,8 +153,9 @@ export const translations = {
     modal_income_desc: 'Incrementa il saldo disponibile',
     amount_label: 'Importo',
     description_label: 'Descrizione',
-    description_placeholder_expense: 'es. Spesa supermercato, Pranzo, Bolletta...',
-    description_placeholder_income: 'es. Stipendio mensile, Bonifico, Rimborso...',
+    description_label_optional: 'Descrizione (opzionale)',
+    description_placeholder_expense: 'es. Spesa supermercato, Pranzo, Bolletta... (opzionale)',
+    description_placeholder_income: 'es. Stipendio mensile, Bonifico, Rimborso... (opzionale)',
     category_label: 'Categoria',
     new_category: 'Nuova categoria...',
     add_category_btn: '+ Aggiungi',
@@ -289,8 +290,9 @@ export const translations = {
     modal_income_desc: 'Increases available balance',
     amount_label: 'Amount',
     description_label: 'Description',
-    description_placeholder_expense: 'e.g. Supermarket, Coffee, Lunch...',
-    description_placeholder_income: 'e.g. Monthly Salary, Transfer, Refund...',
+    description_label_optional: 'Description (optional)',
+    description_placeholder_expense: 'e.g. Supermarket, Coffee, Lunch... (optional)',
+    description_placeholder_income: 'e.g. Monthly Salary, Transfer, Refund... (optional)',
     category_label: 'Category',
     new_category: 'New category...',
     add_category_btn: '+ Add',
@@ -423,8 +425,9 @@ export const translations = {
     modal_income_desc: 'Aumenta el saldo disponible',
     amount_label: 'Importe',
     description_label: 'Descripción',
-    description_placeholder_expense: 'ej. Supermercado, Almuerzo, Café...',
-    description_placeholder_income: 'ej. Nómina, Transferencia, Devolución...',
+    description_label_optional: 'Descripción (opcional)',
+    description_placeholder_expense: 'ej. Supermercado, Almuerzo, Café... (opcional)',
+    description_placeholder_income: 'ej. Nómina, Transferencia, Devolución... (opcional)',
     category_label: 'Categoría',
     new_category: 'Nueva categoría...',
     add_category_btn: '+ Añadir',
@@ -557,8 +560,9 @@ export const translations = {
     modal_income_desc: 'Augmente le solde disponible',
     amount_label: 'Montant',
     description_label: 'Description',
-    description_placeholder_expense: 'ex. Supermarché, Restaurant, Café...',
-    description_placeholder_income: 'ex. Salaire mensuel, Virement, Remboursement...',
+    description_label_optional: 'Description (optionnelle)',
+    description_placeholder_expense: 'ex. Supermarché, Restaurant, Café... (optionnelle)',
+    description_placeholder_income: 'ex. Salaire mensuel, Virement, Remboursement... (optionnelle)',
     category_label: 'Catégorie',
     new_category: 'Nouvelle catégorie...',
     add_category_btn: '+ Ajouter',
@@ -691,8 +695,9 @@ export const translations = {
     modal_income_desc: 'Erhöht das verfügbare Guthaben',
     amount_label: 'Betrag',
     description_label: 'Beschreibung',
-    description_placeholder_expense: 'z.B. Supermarkt, Mittagessen, Kaffee...',
-    description_placeholder_income: 'z.B. Monatsgehalt, Überweisung, Erstattung...',
+    description_label_optional: 'Beschreibung (optional)',
+    description_placeholder_expense: 'z.B. Supermarkt, Mittagessen, Kaffee... (optional)',
+    description_placeholder_income: 'z.B. Monatsgehalt, Überweisung, Erstattung... (optional)',
     category_label: 'Kategorie',
     new_category: 'Neue Kategorie...',
     add_category_btn: '+ Hinzufügen',
@@ -776,5 +781,236 @@ export function useLanguage() {
     setLanguage,
     t,
     supportedLanguages: SUPPORTED_LANGUAGES,
+    localizeCategory: (cat?: string | null) => localizeCategory(cat, currentLanguage),
+    defaultCategories: getDefaultCategories(currentLanguage),
   };
+}
+
+export interface CategoryDef {
+  key: string;
+  type: 'expense' | 'income';
+  names: Record<SupportedLanguage, string>;
+  matchAliases: string[];
+}
+
+export const CATEGORY_DEFINITIONS: CategoryDef[] = [
+  // Expense categories
+  {
+    key: 'groceries',
+    type: 'expense',
+    names: {
+      it: 'Alimentari',
+      en: 'Groceries',
+      es: 'Alimentación',
+      fr: 'Alimentation',
+      de: 'Lebensmittel',
+    },
+    matchAliases: ['groceries', 'alimentari', 'spesa', 'spesa alimentare', 'supermercato', 'supermarket', 'grocery', 'comestibles', 'nourriture'],
+  },
+  {
+    key: 'dining',
+    type: 'expense',
+    names: {
+      it: 'Ristoranti & Bar',
+      en: 'Dining Out',
+      es: 'Restaurantes & Bares',
+      fr: 'Restaurants & Sorties',
+      de: 'Restaurant & Bars',
+    },
+    matchAliases: ['dining out', 'dining', 'ristoranti & bar', 'ristorante', 'ristoranti', 'bar', 'cena', 'pranzo', 'caffè', 'restaurante', 'restaurant'],
+  },
+  {
+    key: 'transport',
+    type: 'expense',
+    names: {
+      it: 'Trasporti',
+      en: 'Transport',
+      es: 'Transporte',
+      fr: 'Transports',
+      de: 'Transport & Mobilität',
+    },
+    matchAliases: ['transport', 'trasporti', 'transporte', 'transports', 'carburante', 'benzina', 'treno', 'metro', 'bus', 'taxi', 'uber'],
+  },
+  {
+    key: 'housing',
+    type: 'expense',
+    names: {
+      it: 'Casa & Affitto',
+      en: 'Housing',
+      es: 'Vivienda',
+      fr: 'Logement',
+      de: 'Wohnen & Miete',
+    },
+    matchAliases: ['housing', 'casa', 'casa & affitto', 'affitto', 'vivienda', 'logement', 'miete', 'mutuo', 'rent'],
+  },
+  {
+    key: 'bills',
+    type: 'expense',
+    names: {
+      it: 'Bollette & Utenze',
+      en: 'Bills & Utilities',
+      es: 'Facturas & Servicios',
+      fr: 'Factures & Services',
+      de: 'Rechnungen & Fixkosten',
+    },
+    matchAliases: ['bills & utilities', 'bills', 'bollette & utenze', 'bollette', 'utenze', 'facturas', 'factures', 'rechnungen', 'utilities'],
+  },
+  {
+    key: 'entertainment',
+    type: 'expense',
+    names: {
+      it: 'Svago & Tempo Libero',
+      en: 'Entertainment',
+      es: 'Ocio & Entretenimiento',
+      fr: 'Loisirs & Divertissement',
+      de: 'Freizeit & Unterhaltung',
+    },
+    matchAliases: ['entertainment', 'svago & tempo libero', 'svago', 'tempo libero', 'ocio', 'loisirs', 'freizeit', 'cinema', 'hobby', 'gaming'],
+  },
+  {
+    key: 'health',
+    type: 'expense',
+    names: {
+      it: 'Salute & Benessere',
+      en: 'Health',
+      es: 'Salud & Bienestar',
+      fr: 'Santé & Bien-être',
+      de: 'Gesundheit & Pflege',
+    },
+    matchAliases: ['health', 'salute & benessere', 'salute', 'farmacia', 'medico', 'salud', 'santé', 'gesundheit', 'wellness', 'pharmacy'],
+  },
+  {
+    key: 'shopping',
+    type: 'expense',
+    names: {
+      it: 'Shopping & Acquisti',
+      en: 'Shopping',
+      es: 'Compras',
+      fr: 'Shopping',
+      de: 'Einkaufen & Shopping',
+    },
+    matchAliases: ['shopping & acquisti', 'shopping', 'acquisti', 'compras', 'einkaufen', 'abbigliamento', 'vestiti', 'clothes'],
+  },
+  {
+    key: 'other',
+    type: 'expense',
+    names: {
+      it: 'Altro',
+      en: 'Other',
+      es: 'Otros',
+      fr: 'Autre',
+      de: 'Sonstiges',
+    },
+    matchAliases: ['other', 'altro', 'varie', 'otros', 'autre', 'sonstiges', 'miscellaneous', 'misc'],
+  },
+
+  // Income categories
+  {
+    key: 'salary',
+    type: 'income',
+    names: {
+      it: 'Stipendio',
+      en: 'Salary',
+      es: 'Sueldo',
+      fr: 'Salaire',
+      de: 'Gehalt',
+    },
+    matchAliases: ['salary', 'stipendio', 'sueldo', 'salaire', 'gehalt', 'busta paga', 'payroll'],
+  },
+  {
+    key: 'transfer',
+    type: 'income',
+    names: {
+      it: 'Bonifico',
+      en: 'Transfer',
+      es: 'Transferencia',
+      fr: 'Virement',
+      de: 'Überweisung',
+    },
+    matchAliases: ['transfer', 'bonifico', 'transferencia', 'virement', 'überweisung', 'giroconto', 'wire'],
+  },
+  {
+    key: 'investments',
+    type: 'income',
+    names: {
+      it: 'Investimenti',
+      en: 'Investments',
+      es: 'Inversiones',
+      fr: 'Investissements',
+      de: 'Investitionen',
+    },
+    matchAliases: ['investments', 'investimenti', 'inversiones', 'investissements', 'investitionen', 'dividendi', 'crypto', 'stocks'],
+  },
+  {
+    key: 'refund',
+    type: 'income',
+    names: {
+      it: 'Rimborso',
+      en: 'Refund',
+      es: 'Reembolso',
+      fr: 'Remboursement',
+      de: 'Rückerstattung',
+    },
+    matchAliases: ['refund', 'rimborso', 'reembolso', 'remboursement', 'rückerstattung', 'reso'],
+  },
+  {
+    key: 'freelance',
+    type: 'income',
+    names: {
+      it: 'Freelance',
+      en: 'Freelance',
+      es: 'Freelance',
+      fr: 'Freelance',
+      de: 'Freiberuflich',
+    },
+    matchAliases: ['freelance', 'freiberuflich', 'consulenza', 'fattura', 'partita iva'],
+  },
+  {
+    key: 'bonus',
+    type: 'income',
+    names: {
+      it: 'Bonus & Premi',
+      en: 'Bonus',
+      es: 'Bonificación',
+      fr: 'Prime & Bonus',
+      de: 'Bonus & Prämie',
+    },
+    matchAliases: ['bonus & premi', 'bonus', 'premi', 'bonificación', 'prime', 'prämie', 'regalo', 'premio'],
+  },
+];
+
+export function getDefaultCategories(lang: SupportedLanguage = 'it'): { expense: string[]; income: string[] } {
+  const expense = CATEGORY_DEFINITIONS
+    .filter((c) => c.type === 'expense')
+    .map((c) => c.names[lang] || c.names.it);
+
+  const income = CATEGORY_DEFINITIONS
+    .filter((c) => c.type === 'income')
+    .map((c) => c.names[lang] || c.names.it);
+
+  return { expense, income };
+}
+
+export function localizeCategory(rawCat?: string | null, targetLang?: SupportedLanguage): string {
+  if (!rawCat || !rawCat.trim()) {
+    const lang = targetLang || getStoredLanguage();
+    return lang === 'it' ? 'Altro' : 'Other';
+  }
+
+  const lang = targetLang || getStoredLanguage();
+  const trimmed = rawCat.trim();
+  const lower = trimmed.toLowerCase();
+
+  // Find matching definition by canonical key, alias, or any translation name
+  const match = CATEGORY_DEFINITIONS.find((def) => {
+    if (def.key === lower) return true;
+    if (def.matchAliases.includes(lower)) return true;
+    return Object.values(def.names).some((name) => name.toLowerCase() === lower);
+  });
+
+  if (match) {
+    return match.names[lang] || match.names.it;
+  }
+
+  return trimmed;
 }

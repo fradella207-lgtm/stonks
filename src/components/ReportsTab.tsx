@@ -44,7 +44,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   onEditTransaction,
   onDeleteTransaction,
 }) => {
-  const { language, t } = useLanguage();
+  const { language, t, localizeCategory } = useLanguage();
   const now = new Date();
   const currentYearStr = String(now.getFullYear());
 
@@ -75,16 +75,16 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   // Delete confirmation state for individual items
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  // Extract all distinct categories available across transactions
+  // Extract all distinct categories available across transactions, localized to current language
   const allCategories = useMemo(() => {
     const cats = new Set<string>();
     transactions.forEach((tx) => {
       if (tx.category && tx.category.trim()) {
-        cats.add(tx.category.trim());
+        cats.add(localizeCategory(tx.category.trim()));
       }
     });
     return Array.from(cats).sort();
-  }, [transactions]);
+  }, [transactions, localizeCategory]);
 
   // Toggle multi-select category
   const toggleCategory = (cat: string) => {
@@ -194,12 +194,13 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
     },
   };
 
-  // Top Categories
+  // Top Categories (localized to current language)
   const categoryMap: Record<string, number> = {};
   filteredTransactions
     .filter((tx) => tx.type === 'expense')
     .forEach((tx) => {
-      const cat = tx.category || tx.description || 'Other';
+      const rawCat = tx.category || tx.description || 'Other';
+      const cat = localizeCategory(rawCat);
       categoryMap[cat] = (categoryMap[cat] || 0) + tx.amount;
     });
 
@@ -222,16 +223,18 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
       // Filter by movement type
       if (movementTypeFilter !== 'all' && tx.type !== movementTypeFilter) return false;
 
-      // Filter by selected categories
+      // Filter by selected categories (using localized category comparison)
       if (selectedCategories.length > 0) {
-        if (!tx.category || !selectedCategories.includes(tx.category.trim())) return false;
+        const itemCat = tx.category ? localizeCategory(tx.category.trim()) : '';
+        if (!selectedCategories.includes(itemCat)) return false;
       }
 
       // Filter by search query
       if (reportSearchQuery.trim()) {
         const q = reportSearchQuery.toLowerCase();
         const matchDesc = tx.description.toLowerCase().includes(q);
-        const matchCat = tx.category && tx.category.toLowerCase().includes(q);
+        const locCat = tx.category ? localizeCategory(tx.category).toLowerCase() : '';
+        const matchCat = (tx.category && tx.category.toLowerCase().includes(q)) || locCat.includes(q);
         const matchLoc = tx.location && tx.location.toLowerCase().includes(q);
         const matchAmt = tx.amount.toString().includes(q);
         const matchDate = tx.date.includes(q);
@@ -610,7 +613,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                                 </div>
                                 <div className="text-[10px] font-mono-code text-app-muted flex items-center gap-1.5 mt-0.5">
                                   <span>{item.date}</span>
-                                  {item.category && <span>• {item.category}</span>}
+                                  {item.category && <span>• {localizeCategory(item.category)}</span>}
                                   {item.location && <span>• {item.location}</span>}
                                 </div>
                               </div>

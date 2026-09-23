@@ -7,8 +7,9 @@
         </trust-anchors>
     </base-config>
 
-    <!-- Specific HTTPS domain restrictions with strict certificate validation -->
+    <!-- Trusted secure domains -->
     <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">appassets.androidplatform.net</domain>
         <domain includeSubdomains="true">stonks.app</domain>
         <domain includeSubdomains="true">run.app</domain>
         <domain includeSubdomains="true">firebaseio.com</domain>

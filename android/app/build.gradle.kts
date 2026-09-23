@@ -30,6 +30,15 @@ android {
             applicationIdSuffix = ".debug"
         }
     }
+
+    sourceSets {
+        getByName("main") {
+            assets {
+                srcDirs("src/main/assets", "../../dist")
+            }
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -46,4 +55,20 @@ dependencies {
     implementation("androidx.webkit:webkit:1.12.1")
     implementation("androidx.activity:activity-ktx:1.9.3")
     implementation("androidx.security:security-crypto:1.0.0")
+}
+
+// Gradle task to ensure Vite dist assets are synced into Android assets automatically
+tasks.register<Copy>("copyViteDistToAssets") {
+    description = "Copies Vite web production build (dist) into Android assets folder"
+    from("../../dist")
+    into("src/main/assets")
+    onlyIf { file("../../dist").exists() }
+}
+
+tasks.matching {
+    it.name.startsWith("preBuild") ||
+    it.name.startsWith("mergeReleaseAssets") ||
+    it.name.startsWith("mergeDebugAssets")
+}.configureEach {
+    dependsOn("copyViteDistToAssets")
 }
