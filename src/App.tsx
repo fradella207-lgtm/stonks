@@ -30,6 +30,8 @@ import {
   getStoredTransactions,
   saveStoredTheme,
   saveTransactionsList,
+  getStoredMonthlyBudget,
+  saveStoredMonthlyBudget,
 } from './services/storage.ts';
 import { syncManager } from './services/syncManager.ts';
 import { firebaseSyncService } from './services/firebaseSync.ts';
@@ -47,6 +49,13 @@ export default function App() {
 
   // Stored transactions state
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  // Monthly Spending Limit
+  const [monthlyBudget, setMonthlyBudget] = useState<number>(getStoredMonthlyBudget);
+  const handleUpdateMonthlyBudget = (amount: number) => {
+    setMonthlyBudget(amount);
+    saveStoredMonthlyBudget(amount);
+  };
 
   // User profile state & auth gate (initialized from persistent cache immediately)
   const [user, setUser] = useState<UserProfile | null>(() => firebaseSyncService.getCurrentUser());
@@ -347,7 +356,7 @@ export default function App() {
           onOpenMenu={() => setIsUnifiedMenuOpen(true)}
         />
 
-        <main className="w-full max-w-xl mx-auto px-4 pt-3.5 space-y-4 flex-1">
+        <main className="w-full max-w-xl md:max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-6 pt-3.5 space-y-4 flex-1">
           {/* Welcome Import Banner for new accounts or users wishing to migrate old data */}
           {showWelcomeBanner && (
             <WelcomeImportBanner
@@ -356,24 +365,25 @@ export default function App() {
             />
           )}
 
-          {/* Section A: Movimenti / Attività Tab (Includes BMW Cockpit, Live Balance & Quick Dock) */}
+          {/* Section A: Activity / Cockpit Tab (Simplified with live balance, budget limit, daily chart) */}
           {activeView === 'history' && (
             <HistoryTab
               transactions={transactions}
-              onEdit={handleOpenEdit}
-              onDelete={handleDeleteTransaction}
+              monthlyBudget={monthlyBudget}
+              onUpdateMonthlyBudget={handleUpdateMonthlyBudget}
               onOpenAdd={(type) => handleOpenAddModal(type || 'expense')}
               onNavigateReports={() => setActiveView('reports')}
             />
           )}
 
-          {/* Section B: Reports Tab (Settimana filter removed, view all expenses by month/year with edit) */}
+          {/* Section B: Reports Tab (Settimana filter removed, view all expenses by month/year with edit and delete) */}
           {activeView === 'reports' && (
             <ReportsTab
               transactions={transactions}
               currentPeriod={currentPeriod}
               onPeriodChange={setCurrentPeriod}
               onEditTransaction={handleOpenEdit}
+              onDeleteTransaction={handleDeleteTransaction}
             />
           )}
         </main>
@@ -400,7 +410,7 @@ export default function App() {
         onDelete={handleDeleteTransaction}
       />
 
-      {/* Modal 2: Unified Centro Controllo (All settings, accounts, theme, export, sync) */}
+      {/* Modal 2: Unified Control Center (All settings, accounts, theme, export, sync) */}
       <UnifiedMenuModal
         isOpen={isUnifiedMenuOpen}
         onClose={() => setIsUnifiedMenuOpen(false)}
@@ -416,6 +426,8 @@ export default function App() {
         onLogout={handleLogout}
         onOpenDataTransfer={() => setIsDataTransferModalOpen(true)}
         onClearData={handleClearAllData}
+        monthlyBudget={monthlyBudget}
+        onUpdateMonthlyBudget={handleUpdateMonthlyBudget}
       />
 
       {/* Modal 3: Import / Export CSV, JSON Data & Google Sheets */}

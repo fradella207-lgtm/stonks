@@ -35,7 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-30 w-full bg-app-header backdrop-blur-xl border-b border-app pt-safe px-4 sm:px-6 transition-colors shadow-xs">
-      <div className="flex items-center justify-between max-w-xl mx-auto w-full min-h-[68px] sm:min-h-[72px] py-2">
+      <div className="flex items-center justify-between max-w-xl md:max-w-4xl lg:max-w-5xl mx-auto w-full min-h-[68px] sm:min-h-[72px] py-2">
         {/* Brand with Nothing OS minimalist glyph styling */}
         <div className="flex items-center gap-3">
           <div className="relative flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-2xl overflow-hidden border border-emerald-500/40 bg-slate-950/90 shadow-md transition-transform hover:scale-105 shrink-0">
@@ -58,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
               ) : (
                 <span className="flex items-center gap-1.5 text-app-muted">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                  Locale • Offline-First
+                  Local • Offline-First
                 </span>
               )}
             </div>
@@ -70,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
           id="btn-unified-menu"
           onClick={onOpenMenu}
           className="flex items-center gap-2.5 px-4 sm:px-5 py-2.5 rounded-full border border-app bg-app-card hover:bg-app-hover text-app-main font-mono-code text-xs sm:text-sm font-bold transition-all duration-150 active:scale-95 shadow-sm cursor-pointer"
-          title="Impostazioni, Account, Temi, Backup ed Esportazione"
+          title="Settings, Account, Themes, Backup & Export"
         >
           {syncState === 'syncing' ? (
             <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />

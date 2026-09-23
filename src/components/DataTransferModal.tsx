@@ -12,10 +12,8 @@ import {
   Check,
   AlertCircle,
   X,
-  Database,
   CloudUpload,
   ExternalLink,
-  Sparkles,
   Link as LinkIcon,
 } from 'lucide-react';
 import { Transaction } from '../types.ts';
@@ -60,14 +58,14 @@ export const DataTransferModal: React.FC<DataTransferModalProps> = ({
       const items = parseImportData(text, isJson ? 'json' : 'csv');
 
       if (items.length === 0) {
-        throw new Error('Nessuna transazione valida trovata nel file.');
+        throw new Error('No valid transactions found in the file.');
       }
 
       await onImportTransactions(items);
-      setImportStatus(`Importati con successo ${items.length} movimenti!`);
+      setImportStatus(`Successfully imported ${items.length} transactions!`);
     } catch (err: any) {
       console.error('Import error:', err);
-      setErrorMessage(err.message || 'Errore durante l\'importazione del file.');
+      setErrorMessage(err.message || 'Error occurred during file import.');
     } finally {
       setIsProcessing(false);
       if (fileInputRef.current) {
@@ -78,7 +76,7 @@ export const DataTransferModal: React.FC<DataTransferModalProps> = ({
 
   const handleGoogleSheetsExport = async () => {
     if (transactions.length === 0) {
-      setErrorMessage('Nessun movimento registrato da esportare.');
+      setErrorMessage('No transactions recorded to export.');
       return;
     }
 
@@ -90,10 +88,10 @@ export const DataTransferModal: React.FC<DataTransferModalProps> = ({
     try {
       const res = await exportToGoogleSheets(transactions);
       setSheetsUrlCreated(res.spreadsheetUrl);
-      setImportStatus(`Creato con successo il Foglio Google con ${res.rowCount} movimenti!`);
+      setImportStatus(`Successfully created Google Sheet with ${res.rowCount} entries!`);
     } catch (err: any) {
       console.error('Google Sheets export error:', err);
-      setErrorMessage(err.message || 'Errore durante l\'esportazione su Google Fogli.');
+      setErrorMessage(err.message || 'Error exporting to Google Sheets.');
     } finally {
       setIsProcessing(false);
     }
@@ -101,7 +99,7 @@ export const DataTransferModal: React.FC<DataTransferModalProps> = ({
 
   const handleGoogleSheetsImport = async () => {
     if (!sheetImportInput.trim()) {
-      setErrorMessage('Inserisci il link o l\'ID del Foglio Google.');
+      setErrorMessage('Please enter a Google Sheet link or ID.');
       return;
     }
 
@@ -112,15 +110,15 @@ export const DataTransferModal: React.FC<DataTransferModalProps> = ({
     try {
       const imported = await importFromGoogleSheets(sheetImportInput.trim());
       if (imported.length === 0) {
-        throw new Error('Nessun dato valido estratto dal foglio specificato.');
+        throw new Error('No valid transactions found in the specified sheet.');
       }
       await onImportTransactions(imported);
-      setImportStatus(`Importati con successo ${imported.length} movimenti da Fogli Google!`);
+      setImportStatus(`Successfully imported ${imported.length} transactions from Google Sheets!`);
       setSheetImportInput('');
       setShowSheetsImportField(false);
     } catch (err: any) {
       console.error('Google Sheets import error:', err);
-      setErrorMessage(err.message || 'Errore durante l\'importazione da Google Fogli.');
+      setErrorMessage(err.message || 'Error importing from Google Sheets.');
     } finally {
       setIsProcessing(false);
     }
@@ -137,14 +135,15 @@ export const DataTransferModal: React.FC<DataTransferModalProps> = ({
             </div>
             <div>
               <span className="font-mono-code text-xs font-bold uppercase tracking-widest text-app-main block">
-                GESTIONE DATI // FOGLI & BACKUP
+                DATA MANAGEMENT // BACKUP & SHEETS
               </span>
               <span className="text-[9px] text-app-muted font-mono-code">
-                Google Fogli • CSV Excel • JSON Offline
+                Google Sheets • Excel CSV • JSON Offline
               </span>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-1 rounded-full text-app-muted hover:text-app-main transition-colors cursor-pointer"
           >
@@ -165,7 +164,7 @@ export const DataTransferModal: React.FC<DataTransferModalProps> = ({
                   rel="noopener noreferrer"
                   className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-600 text-white font-bold text-[11px] hover:bg-emerald-500 transition-colors"
                 >
-                  <span>Apri Foglio Google</span>
+                  <span>Open Google Sheet</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               )}
@@ -180,20 +179,20 @@ export const DataTransferModal: React.FC<DataTransferModalProps> = ({
           </div>
         )}
 
-        {/* 1. SEZIONE GOOGLE FOGLI (ESPORTA & SALVA) */}
+        {/* 1. Google Sheets Section */}
         <div className="p-3.5 rounded-2xl border border-emerald-500/30 bg-emerald-950/15 space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.7)]" />
               <span className="text-[11px] font-mono-code uppercase font-bold text-emerald-400 tracking-wider">
-                Integrazione Google Fogli
+                Google Sheets Integration
               </span>
             </div>
-            <span className="text-[9px] font-mono-code text-app-muted">Cloud Google</span>
+            <span className="text-[9px] font-mono-code text-app-muted">Google Cloud</span>
           </div>
 
           <p className="text-[10px] text-app-muted font-mono-code leading-relaxed">
-            Salva istantaneamente tutte le spese ed entrate in un nuovo foglio di calcolo Google Drive nel tuo account.
+            Instantly export all your income and expenses to a brand new Google Sheets document in your Google Drive.
           </p>
 
           <button
@@ -203,42 +202,44 @@ export const DataTransferModal: React.FC<DataTransferModalProps> = ({
             className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono-code font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md disabled:opacity-50"
           >
             <FileSpreadsheet className="w-4 h-4" />
-            <span>{isProcessing ? 'Connessione a Google...' : 'Salva su Google Fogli'}</span>
+            <span>{isProcessing ? 'Connecting to Google...' : 'Export to Google Sheets'}</span>
           </button>
         </div>
 
-        {/* 2. ESPORTA IN ALTRI FORMATI (CSV / JSON) */}
+        {/* 2. Direct File Download (CSV / JSON) */}
         <div className="space-y-2">
           <div className="text-[11px] font-mono-code uppercase tracking-wider text-app-muted flex items-center gap-1.5 font-bold">
             <Download className="w-3.5 h-3.5 text-app-muted" />
-            <span>Download Diretto ({transactions.length} record)</span>
+            <span>Direct File Download ({transactions.length} records)</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button
+              type="button"
               onClick={() => exportToCsv(transactions)}
               className="p-3 bg-app-subtle hover:bg-app-hover border border-app rounded-2xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-500 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-mono-code font-bold text-app-main">Scarica CSV</span>
-              <span className="text-[9px] text-app-muted font-mono-code">Excel & Fogli</span>
+              <span className="text-xs font-mono-code font-bold text-app-main">Download CSV</span>
+              <span className="text-[9px] text-app-muted font-mono-code">Excel & Numbers</span>
             </button>
 
             <button
+              type="button"
               onClick={() => exportToJson(transactions)}
               className="p-3 bg-app-subtle hover:bg-app-hover border border-app rounded-2xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all"
             >
               <FileCode className="w-4 h-4 text-amber-500 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-mono-code font-bold text-app-main">Backup JSON</span>
-              <span className="text-[9px] text-app-muted font-mono-code">Ripristino totale</span>
+              <span className="text-xs font-mono-code font-bold text-app-main">JSON Backup</span>
+              <span className="text-[9px] text-app-muted font-mono-code">Full restore</span>
             </button>
           </div>
         </div>
 
-        {/* 3. IMPORTA DATI VECCHI (File o Da Link Foglio Google) */}
+        {/* 3. Import Data */}
         <div className="space-y-2 pt-2 border-t border-app-subtle">
           <div className="text-[11px] font-mono-code uppercase tracking-wider text-app-muted flex items-center gap-1.5 font-bold">
             <Upload className="w-3.5 h-3.5 text-app-muted" />
-            <span>Importa Dati Vecchi o Backup</span>
+            <span>Import Previous Data or Backup</span>
           </div>
 
           <input
@@ -250,6 +251,7 @@ export const DataTransferModal: React.FC<DataTransferModalProps> = ({
           />
 
           <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isProcessing}
             className="w-full p-3 border border-dashed border-app hover:border-red-500 bg-app-subtle/50 hover:bg-app-hover rounded-2xl flex items-center justify-center gap-3 text-app-sub transition-all cursor-pointer text-left"
@@ -257,10 +259,10 @@ export const DataTransferModal: React.FC<DataTransferModalProps> = ({
             <CloudUpload className="w-4 h-4 text-app-muted shrink-0" />
             <div className="font-mono-code">
               <div className="text-xs font-bold text-app-main">
-                Carica file vecchio (.CSV o .JSON)
+                Upload existing file (.CSV or .JSON)
               </div>
               <div className="text-[9px] text-app-muted">
-                Importa automaticamente spese e categorie precedenti
+                Automatically parses previous expenses and categories
               </div>
             </div>
           </button>
@@ -273,12 +275,12 @@ export const DataTransferModal: React.FC<DataTransferModalProps> = ({
               className="w-full py-2 text-center text-[10px] font-mono-code text-app-muted hover:text-emerald-400 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
             >
               <LinkIcon className="w-3 h-3" />
-              <span>Hai già un link di Google Fogli da importare? Clicca qui</span>
+              <span>Already have a Google Sheet link to import? Click here</span>
             </button>
           ) : (
             <div className="p-3 rounded-2xl bg-app-subtle border border-app space-y-2">
               <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted block font-bold">
-                Link o ID Foglio Google da importare
+                Google Sheet Link or ID to import
               </label>
               <input
                 type="text"
@@ -294,14 +296,14 @@ export const DataTransferModal: React.FC<DataTransferModalProps> = ({
                   disabled={isProcessing}
                   className="flex-1 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-mono-code font-bold text-xs cursor-pointer disabled:opacity-50"
                 >
-                  Importa da Foglio
+                  Import from Sheet
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowSheetsImportField(false)}
                   className="px-3 py-1.5 rounded-xl bg-app-card border border-app text-app-muted text-xs font-mono-code cursor-pointer"
                 >
-                  Annulla
+                  Cancel
                 </button>
               </div>
             </div>
@@ -310,10 +312,11 @@ export const DataTransferModal: React.FC<DataTransferModalProps> = ({
 
         <div className="pt-2 border-t border-app-subtle flex justify-end">
           <button
+            type="button"
             onClick={onClose}
             className="px-4 py-2 rounded-xl bg-app-subtle border border-app text-xs font-mono-code text-app-muted hover:text-app-main transition-colors cursor-pointer"
           >
-            Chiudi
+            Close
           </button>
         </div>
       </div>

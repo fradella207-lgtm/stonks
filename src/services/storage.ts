@@ -12,6 +12,7 @@ const STORAGE_KEYS = {
   CONFIG: 'stonks_config_v2',
   THEME: 'stonks_theme_mode',
   CUSTOM_CATEGORIES: 'stonks_custom_categories_v1',
+  MONTHLY_BUDGET: 'stonks_monthly_budget_v1',
 };
 
 // Generate a valid UUID v4 fallback
@@ -302,14 +303,34 @@ export function getStoredCustomCategories(): { expense: string[]; income: string
     }
   } catch {}
   return {
-    expense: ['Spesa', 'Ristorante', 'Trasporti', 'Casa', 'Bollette', 'Svago', 'Salute', 'Shopping', 'Altro'],
-    income: ['Stipendio', 'Bonifico', 'Investimenti', 'Rimborso', 'Vendita', 'Bonus', 'Altro'],
+    expense: ['Groceries', 'Dining Out', 'Transport', 'Housing', 'Bills & Utilities', 'Entertainment', 'Health', 'Shopping', 'Other'],
+    income: ['Salary', 'Transfer', 'Investments', 'Refund', 'Freelance', 'Bonus', 'Other'],
   };
 }
 
 export function saveStoredCustomCategories(cats: { expense: string[]; income: string[] }): void {
   try {
     localStorage.setItem(STORAGE_KEYS.CUSTOM_CATEGORIES, JSON.stringify(cats));
+  } catch {}
+}
+
+// Monthly Spending Limit Budget storage
+export function getStoredMonthlyBudget(): number {
+  try {
+    const val = localStorage.getItem(STORAGE_KEYS.MONTHLY_BUDGET);
+    if (val !== null) {
+      const num = parseFloat(val);
+      if (!isNaN(num) && num > 0) {
+        return num;
+      }
+    }
+  } catch {}
+  return 1500; // Default €1,500 monthly limit
+}
+
+export function saveStoredMonthlyBudget(amount: number): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.MONTHLY_BUDGET, String(amount));
   } catch {}
 }
 

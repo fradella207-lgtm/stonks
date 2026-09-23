@@ -16,6 +16,7 @@ import {
   Trash2,
   Check,
   Plus,
+  AlertTriangle,
 } from 'lucide-react';
 import { Transaction, TransactionType } from '../types.ts';
 import { getStoredCustomCategories, saveStoredCustomCategories } from '../services/storage.ts';
@@ -83,13 +84,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setLocation(transactionToEdit.location || '');
         setReceiptImage(transactionToEdit.receiptImage || '');
       } else {
-        // Enforce strictly the chosen type without toggling to the other
         setType(initialType);
         setAmountStr('');
         setDescription('');
         setDate(todayIso);
         const defaultList = initialType === 'expense' ? loadedCategories.expense : loadedCategories.income;
-        setCategory(defaultList[0] || 'Altro');
+        setCategory(defaultList[0] || 'Other');
         setLocation('');
         setReceiptImage('');
       }
@@ -137,9 +137,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       id: transactionToEdit?.id,
       type,
       amount: cleanAmount,
-      description: description.trim() || (isIncome ? 'Entrata' : 'Uscita'),
+      description: description.trim() || (isIncome ? 'Income' : 'Expense'),
       date: date || todayIso,
-      category: category.trim() || 'Altro',
+      category: category.trim() || 'Other',
       location: location.trim() || undefined,
       receiptImage: receiptImage || undefined,
     });
@@ -159,7 +159,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     if (!file) return;
 
     if (file.size > 2.5 * 1024 * 1024) {
-      setImageError('Immagine troppo grande. Scegli uno scontrino inferiore a 2.5MB.');
+      setImageError('Image too large. Please select a receipt under 2.5MB.');
       return;
     }
 
@@ -192,11 +192,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             />
             <h2 className="text-xs font-mono-code font-bold uppercase tracking-widest text-app-main">
               {isEditing
-                ? `MODIFICA ${isIncome ? 'ENTRATA' : 'USCITA'} // STONKS`
-                : `REGISTRA ${isIncome ? 'ENTRATA' : 'USCITA'} // STONKS`}
+                ? `EDIT ${isIncome ? 'INCOME' : 'EXPENSE'} // STONKS`
+                : `RECORD ${isIncome ? 'INCOME' : 'EXPENSE'} // STONKS`}
             </h2>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-1.5 rounded-full text-app-muted hover:text-app-main hover:bg-app-subtle transition-colors cursor-pointer"
           >
@@ -206,7 +207,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-4 no-scrollbar">
-          {/* Badge Tipo: Shows ONLY the selected type to avoid duplicate/confusing toggles */}
+          {/* Badge Tipo: Shows selected type */}
           <div
             className={`p-3 rounded-2xl border flex items-center justify-between transition-colors ${
               isIncome
@@ -224,22 +225,22 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               </div>
               <div>
                 <div className="text-[11px] font-mono-code font-bold uppercase tracking-wider">
-                  {isIncome ? 'REGISTRAZIONE ENTRATA' : 'REGISTRAZIONE USCITA'}
+                  {isIncome ? 'RECORD INCOME' : 'RECORD EXPENSE'}
                 </div>
                 <div className="text-[9px] text-app-muted font-mono-code">
-                  {isIncome ? 'Incrementa il saldo disponibile' : 'Detrae dal budget del periodo'}
+                  {isIncome ? 'Increases available balance' : 'Deducts from monthly budget'}
                 </div>
               </div>
             </div>
-            <span className="font-mono-code text-xs font-bold px-2 py-0.5 rounded-full bg-app-card border border-app">
-              {isIncome ? '+ ENTRATA' : '- USCITA'}
+            <span className="font-mono-code text-xs font-bold px-2.5 py-0.5 rounded-full bg-app-card border border-app">
+              {isIncome ? '+ INCOME' : '- EXPENSE'}
             </span>
           </div>
 
           {/* Amount Input with Currency Symbol */}
           <div className="space-y-1.5">
             <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted block">
-              Importo
+              Amount
             </label>
             <div className="relative">
               <span
@@ -287,12 +288,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           {/* Description */}
           <div className="space-y-1">
             <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted block">
-              Descrizione
+              Description
             </label>
             <input
               type="text"
               required
-              placeholder={isIncome ? 'es. Stipendio mensile, Bonifico...' : 'es. Spesa supermercato, Pranzo...'}
+              placeholder={isIncome ? 'e.g. Monthly Salary, Transfer...' : 'e.g. Supermarket, Coffee, Lunch...'}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className={`w-full bg-app-input border border-app rounded-2xl px-4 py-2.5 text-xs font-mono-code text-app-main placeholder:text-app-muted/50 outline-none transition-colors ${
@@ -306,10 +307,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted flex items-center gap-1">
                 <Tag className="w-3 h-3 text-app-muted" />
-                <span>Categoria</span>
+                <span>Category</span>
               </label>
               <span className="text-[9px] font-mono-code text-app-muted">
-                {category || 'Nessuna'}
+                {category || 'None'}
               </span>
             </div>
 
@@ -340,7 +341,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   <input
                     type="text"
                     autoFocus
-                    placeholder="Nuova categoria"
+                    placeholder="New category"
                     value={newCategoryInput}
                     onChange={(e) => setNewCategoryInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -375,7 +376,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   className="px-2.5 py-1 rounded-xl text-[11px] font-mono-code border border-dashed border-app hover:border-app-hover bg-app-card hover:bg-app-hover text-app-muted hover:text-app-main transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <Plus className="w-3 h-3" />
-                  <span>Aggiungi</span>
+                  <span>Add</span>
                 </button>
               )}
             </div>
@@ -387,7 +388,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <div className="space-y-1">
               <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted flex items-center gap-1">
                 <Calendar className="w-3 h-3 text-app-muted" />
-                <span>Data</span>
+                <span>Date</span>
               </label>
               <input
                 type="date"
@@ -404,11 +405,11 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <div className="space-y-1">
               <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-app-muted" />
-                <span>Luogo (Opzionale)</span>
+                <span>Location (Optional)</span>
               </label>
               <input
                 type="text"
-                placeholder="es. Milano, Esselunga"
+                placeholder="e.g. Rome, Supermarket..."
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 className={`w-full bg-app-input border border-app rounded-2xl px-3 py-2 text-xs font-mono-code text-app-main placeholder:text-app-muted/50 outline-none transition-colors ${
@@ -418,12 +419,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             </div>
           </div>
 
-          {/* Scontrino Attachment Section */}
+          {/* Receipt Attachment Section */}
           <div className="space-y-1.5 pt-1">
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted flex items-center gap-1">
                 <ImageIcon className="w-3 h-3 text-app-muted" />
-                <span>Scontrino / Ricevuta (Opzionale)</span>
+                <span>Receipt / Invoice (Optional)</span>
               </label>
               {receiptImage && (
                 <button
@@ -431,7 +432,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   onClick={() => setReceiptImage('')}
                   className="text-[10px] font-mono-code text-red-500 hover:underline cursor-pointer"
                 >
-                  Rimuovi foto
+                  Remove photo
                 </button>
               )}
             </div>
@@ -440,7 +441,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               <div className="relative rounded-2xl overflow-hidden border border-app bg-black/40 h-28 flex items-center justify-center">
                 <img
                   src={receiptImage}
-                  alt="Anteprima scontrino"
+                  alt="Receipt Preview"
                   className="h-full w-auto object-contain"
                 />
               </div>
@@ -459,7 +460,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   className="w-full py-2.5 px-3 rounded-2xl border border-dashed border-app bg-app-subtle/50 hover:bg-app-hover text-app-sub text-xs font-mono-code flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <Camera className="w-4 h-4 text-app-muted" />
-                  <span>Carica o scatta foto dello scontrino</span>
+                  <span>Upload or take photo of receipt</span>
                 </button>
                 {imageError && (
                   <p className="text-[11px] font-mono-code text-red-500 mt-1 text-center">
@@ -471,7 +472,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-2 flex flex-col gap-2">
+          <div className="pt-3 flex flex-col gap-2.5">
             <button
               id="btn-submit-transaction"
               type="submit"
@@ -481,35 +482,38 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   : 'bg-red-600 hover:bg-red-500 shadow-red-900/30'
               }`}
             >
-              <Check className="w-4 h-4" />
-              <span>{isEditing ? 'Salva Modifiche' : `Registra ${isIncome ? 'Entrata' : 'Uscita'}`}</span>
+              <Check className="w-4 h-4 stroke-[2.5]" />
+              <span>{isEditing ? 'Save Changes' : `Record ${isIncome ? 'Income' : 'Expense'}`}</span>
             </button>
 
-            {/* If editing, allow deleting from here as well */}
+            {/* Robust, Clearly Visible Delete Button with Inline Confirmation */}
             {isEditing && onDelete && transactionToEdit && (
               <div className="pt-1">
                 {confirmDelete ? (
-                  <div className="p-2.5 rounded-2xl bg-red-950/20 border border-red-500/30 flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-mono-code text-red-400">
-                      Eliminare questo movimento?
-                    </span>
-                    <div className="flex items-center gap-1.5">
+                  <div className="p-3 rounded-2xl bg-red-950/30 border border-red-500/40 flex items-center justify-between gap-3 animate-in fade-in">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                      <span className="text-[11px] font-mono-code text-red-400 font-medium">
+                        Delete this transaction permanently?
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
                         type="button"
                         onClick={() => {
                           onDelete(transactionToEdit.id);
                           onClose();
                         }}
-                        className="px-2.5 py-1 rounded-lg bg-red-600 text-white font-mono-code text-[10px] font-bold"
+                        className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-mono-code text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-xs"
                       >
-                        Sì, Elimina
+                        Yes, Delete
                       </button>
                       <button
                         type="button"
                         onClick={() => setConfirmDelete(false)}
-                        className="px-2 py-1 rounded-lg bg-app-card border border-app text-app-muted text-[10px]"
+                        className="px-3 py-1.5 rounded-xl bg-app-card border border-app text-app-muted hover:text-app-main font-mono-code text-xs cursor-pointer"
                       >
-                        Annulla
+                        Cancel
                       </button>
                     </div>
                   </div>
@@ -517,10 +521,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setConfirmDelete(true)}
-                    className="w-full py-2 rounded-xl text-app-muted hover:text-red-500 hover:bg-red-950/20 font-mono-code text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="w-full py-2.5 rounded-2xl border border-red-500/20 bg-red-950/10 hover:bg-red-950/20 text-red-400 hover:text-red-300 font-mono-code text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Elimina Questo Movimento</span>
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                    <span>Delete Transaction</span>
                   </button>
                 )}
               </div>

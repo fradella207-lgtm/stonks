@@ -31,13 +31,13 @@ export const DailyActivityCard: React.FC<DailyActivityCardProps> = ({ transactio
       d.setDate(now.getDate() - i);
       const dateIso = d.toISOString().split('T')[0];
 
-      const weekdayStr = d.toLocaleDateString('it-IT', { weekday: 'short' });
+      const weekdayStr = d.toLocaleDateString('en-US', { weekday: 'short' });
       const dayNum = d.getDate();
-      const label = i === 0 ? 'Oggi' : `${weekdayStr.toUpperCase()} ${dayNum}`;
-      const fullDateLabel = d.toLocaleDateString('it-IT', {
+      const label = i === 0 ? 'Today' : `${weekdayStr.toUpperCase()} ${dayNum}`;
+      const fullDateLabel = d.toLocaleDateString('en-US', {
         weekday: 'long',
         day: 'numeric',
-        month: 'long',
+        month: 'short',
       });
 
       const dayTxs = transactions.filter((t) => t.date === dateIso);
@@ -78,7 +78,7 @@ export const DailyActivityCard: React.FC<DailyActivityCardProps> = ({ transactio
   const activeDay = daysData[selectedDayIdx] || daysData[6];
 
   const formatEUR = (val: number) => {
-    return new Intl.NumberFormat('it-IT', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 2,
@@ -96,7 +96,7 @@ export const DailyActivityCard: React.FC<DailyActivityCardProps> = ({ transactio
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4 text-red-500 shrink-0" />
           <span className="text-[11px] font-mono-code uppercase text-app-main font-bold tracking-wider">
-            ATTIVITÀ GIORNALIERA (TOCCA UN GIORNO PER ISPEZIONARE)
+            Daily Activity (Tap a day to inspect)
           </span>
         </div>
         <span className="text-[10px] font-mono-code text-app-muted capitalize hidden sm:inline-block">
@@ -116,6 +116,7 @@ export const DailyActivityCard: React.FC<DailyActivityCardProps> = ({ transactio
           return (
             <button
               key={d.dateIso}
+              type="button"
               onClick={() => setSelectedDayIdx(idx)}
               className={`flex flex-col items-center justify-end p-1.5 sm:p-2 rounded-2xl border transition-all cursor-pointer group ${
                 isSelected
@@ -181,7 +182,7 @@ export const DailyActivityCard: React.FC<DailyActivityCardProps> = ({ transactio
           <span className="w-2 h-2 rounded-full bg-red-500" />
           <span className="font-bold text-app-main capitalize">{activeDay.fullDateLabel}:</span>
           <span className="text-app-muted">
-            {activeDay.count} {activeDay.count === 1 ? 'movimento' : 'movimenti'}
+            {activeDay.count} {activeDay.count === 1 ? 'transaction' : 'transactions'}
           </span>
         </div>
 
@@ -197,7 +198,7 @@ export const DailyActivityCard: React.FC<DailyActivityCardProps> = ({ transactio
             </span>
           )}
           {activeDay.income === 0 && activeDay.expense === 0 && (
-            <span className="text-app-muted italic">Nessun movimento in questo giorno</span>
+            <span className="text-app-muted italic">No activity recorded for this day</span>
           )}
         </div>
       </div>

@@ -13,10 +13,6 @@ import {
   Sparkles,
   Send,
   CheckCircle2,
-  Clock,
-  ExternalLink,
-  ChevronRight,
-  Mail,
 } from 'lucide-react';
 import { UserProfile, UserFeedback } from '../types.ts';
 import { db } from '../services/firebase.ts';
@@ -97,7 +93,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
         });
       }
     } catch (err) {
-      console.warn('Feedback non sincronizzato su Firestore (salvato comunque in locale):', err);
+      console.warn('Feedback not synced to Firestore (saved locally):', err);
     }
 
     setIsSubmitting(false);
@@ -114,16 +110,16 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
   const getTypeLabel = (type: string) => {
     switch (type) {
       case 'suggestion':
-        return { label: 'Suggerimento', icon: Lightbulb, color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' };
+        return { label: 'Suggestion', icon: Lightbulb, color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' };
       case 'bug':
-        return { label: 'Segnalazione Bug', icon: Bug, color: 'text-red-500 bg-red-500/10 border-red-500/20' };
+        return { label: 'Bug Report', icon: Bug, color: 'text-red-500 bg-red-500/10 border-red-500/20' };
       default:
-        return { label: 'Miglioramento', icon: Sparkles, color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' };
+        return { label: 'Improvement', icon: Sparkles, color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' };
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -138,18 +134,19 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
             </div>
             <div>
               <h2 className="text-base font-bold text-app-main tracking-tight font-mono-code">
-                SEGNALAZIONI & SUGGERIMENTI
+                FEEDBACK & SUGGESTIONS
               </h2>
               <p className="text-xs text-app-muted">
-                Aiutaci a migliorare Stonks con le tue idee o segnalando un errore
+                Help improve Stonks with your ideas or by reporting an issue
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             className="p-1.5 rounded-full bg-app-subtle hover:bg-app-hover text-app-muted hover:text-app-main transition-colors cursor-pointer"
-            title="Chiudi"
+            title="Close"
           >
             <X className="w-4 h-4" />
           </button>
@@ -166,7 +163,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
                 : 'bg-app-subtle text-app-muted hover:text-app-main'
             }`}
           >
-            Nuova Segnalazione
+            New Feedback
           </button>
           <button
             type="button"
@@ -177,7 +174,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
                 : 'bg-app-subtle text-app-muted hover:text-app-main'
             }`}
           >
-            <span>Le mie segnalazioni</span>
+            <span>My Feedback</span>
             {feedbackList.length > 0 && (
               <span className="px-1.5 py-0.2 rounded-full bg-red-600 text-white text-[9px] font-bold">
                 {feedbackList.length}
@@ -193,7 +190,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
               {/* Feedback Type Selector */}
               <div>
                 <label className="block text-[10px] font-mono-code uppercase font-bold text-app-muted mb-1.5">
-                  Tipo di Segnalazione
+                  Type of Feedback
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
@@ -206,7 +203,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
                     }`}
                   >
                     <Lightbulb className="w-4 h-4 mb-1 text-amber-500" />
-                    <span className="text-xs font-mono-code">Idea / Funzione</span>
+                    <span className="text-xs font-mono-code">Idea / Feature</span>
                   </button>
 
                   <button
@@ -219,7 +216,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
                     }`}
                   >
                     <Bug className="w-4 h-4 mb-1 text-red-500" />
-                    <span className="text-xs font-mono-code">Problema / Bug</span>
+                    <span className="text-xs font-mono-code">Bug Report</span>
                   </button>
 
                   <button
@@ -232,7 +229,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
                     }`}
                   >
                     <Sparkles className="w-4 h-4 mb-1 text-emerald-500" />
-                    <span className="text-xs font-mono-code">Miglioramento</span>
+                    <span className="text-xs font-mono-code">Enhancement</span>
                   </button>
                 </div>
               </div>
@@ -240,14 +237,14 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
               {/* Title Input */}
               <div>
                 <label className="block text-[10px] font-mono-code uppercase font-bold text-app-muted mb-1.5">
-                  Titolo Sintetico *
+                  Summary Title *
                 </label>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Es. Esportazione resoconto in PDF, Notifica soglia mensile..."
+                  placeholder="e.g. Export report as PDF, Monthly budget notification..."
                   className="w-full px-3.5 py-2.5 rounded-2xl bg-app-input border border-app text-app-main placeholder:text-app-muted text-xs font-mono-code focus:outline-none focus:border-red-500 transition-colors"
                 />
               </div>
@@ -255,14 +252,14 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
               {/* Description Input */}
               <div>
                 <label className="block text-[10px] font-mono-code uppercase font-bold text-app-muted mb-1.5">
-                  Descrizione Dettagliata *
+                  Detailed Description *
                 </label>
                 <textarea
                   required
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Descrivi cosa vorresti vedere implementato o che problema hai riscontrato..."
+                  placeholder="Describe the feature you'd like or what unexpected behavior you encountered..."
                   className="w-full px-3.5 py-2.5 rounded-2xl bg-app-input border border-app text-app-main placeholder:text-app-muted text-xs font-mono-code focus:outline-none focus:border-red-500 transition-colors resize-none leading-relaxed"
                 />
               </div>
@@ -271,28 +268,28 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-mono-code uppercase font-bold text-app-muted mb-1.5">
-                    Priorità
+                    Priority
                   </label>
                   <select
                     value={priority}
                     onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high')}
                     className="w-full px-3.5 py-2 rounded-2xl bg-app-input border border-app text-app-main text-xs font-mono-code focus:outline-none"
                   >
-                    <option value="low">Bassa • Idea futura</option>
-                    <option value="medium">Media • Consigliata</option>
-                    <option value="high">Alta • Problema bloccante</option>
+                    <option value="low">Low • Future Idea</option>
+                    <option value="medium">Medium • Recommended</option>
+                    <option value="high">High • Blocking Issue</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-mono-code uppercase font-bold text-app-muted mb-1.5">
-                    Tuo Recapito (opzionale)
+                    Your Contact Email (optional)
                   </label>
                   <input
                     type="email"
                     value={contactEmail}
                     onChange={(e) => setContactEmail(e.target.value)}
-                    placeholder="email@dominio.it"
+                    placeholder="email@example.com"
                     className="w-full px-3.5 py-2 rounded-2xl bg-app-input border border-app text-app-main placeholder:text-app-muted text-xs font-mono-code focus:outline-none"
                   />
                 </div>
@@ -308,7 +305,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
                     className="p-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 text-xs font-mono-code flex items-center gap-2"
                   >
                     <CheckCircle2 className="w-4 h-4 shrink-0" />
-                    <span>Segnalazione registrata con successo! Grazie per il tuo aiuto.</span>
+                    <span>Feedback submitted successfully! Thank you for helping us improve Stonks.</span>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -321,7 +318,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
                   className="flex-1 py-3 px-4 rounded-2xl bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-mono-code font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-98"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>{isSubmitting ? 'Invio in corso...' : 'Invia Segnalazione'}</span>
+                  <span>{isSubmitting ? 'Submitting...' : 'Submit Feedback'}</span>
                 </button>
               </div>
             </form>
@@ -330,22 +327,22 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
               {feedbackList.length === 0 ? (
                 <div className="text-center py-8 text-app-muted text-xs font-mono-code space-y-2">
                   <MessageSquarePlus className="w-8 h-8 mx-auto opacity-40 text-app-muted" />
-                  <p>Non hai ancora inviato segnalazioni da questo dispositivo.</p>
+                  <p>You have not submitted any feedback from this device yet.</p>
                   <button
                     type="button"
                     onClick={() => setActiveTab('form')}
-                    className="text-red-500 hover:underline font-bold text-xs"
+                    className="text-red-500 hover:underline font-bold text-xs cursor-pointer"
                   >
-                    Invia la tua prima proposta &rarr;
+                    Submit your first idea &rarr;
                   </button>
                 </div>
               ) : (
                 feedbackList.map((item) => {
                   const meta = getTypeLabel(item.type);
                   const Icon = meta.icon;
-                  const dateStr = new Date(item.createdAt).toLocaleDateString('it-IT', {
-                    day: '2-digit',
-                    month: '2-digit',
+                  const dateStr = new Date(item.createdAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
                     year: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit',
@@ -367,7 +364,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, u
                           <span className="text-[10px] text-app-muted">{dateStr}</span>
                         </div>
                         <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold">
-                          Inviato
+                          Submitted
                         </span>
                       </div>
                       <h4 className="text-xs font-bold text-app-main">{item.title}</h4>
