@@ -386,9 +386,9 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
             <div className="relative h-44 w-full flex items-center justify-center">
               <Doughnut data={doughnutData} options={doughnutOptions} />
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-[10px] font-mono-code uppercase text-app-muted">{t('net_balance')}</span>
-                <span className={`text-base sm:text-lg font-mono-code font-black ${netBalance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                  {netBalance >= 0 ? '+' : ''}{formatEUR(netBalance)}
+                <span className="text-[10px] font-mono-code uppercase text-app-muted">{t('total_outflow')}</span>
+                <span className="text-base sm:text-lg font-mono-code font-black text-red-500">
+                  {formatEUR(totalExpense)}
                 </span>
               </div>
             </div>

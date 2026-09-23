@@ -4,6 +4,7 @@
  */
 
 import { AppConfig, QueueItem, SyncStatus, ThemeMode, Transaction } from '../types.ts';
+import { secureStorage } from './secureStorage.ts';
 
 const STORAGE_KEYS = {
   TRANSACTIONS: 'stonks_transactions_v2',
@@ -118,7 +119,7 @@ export function updateTransactionLocal(updatedTx: Transaction): Transaction {
 // Read all stored transactions
 export function getStoredTransactions(): Transaction[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+    const raw = secureStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
     if (!raw) {
       return [];
     }
@@ -142,7 +143,7 @@ export function getStoredTransactions(): Transaction[] {
 
       // If we filtered out dummy items, persist the cleaned list immediately
       if (sanitized.length !== parsed.length) {
-        localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(sanitized));
+        secureStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(sanitized));
       }
 
       return sanitized;
@@ -157,7 +158,7 @@ export function getStoredTransactions(): Transaction[] {
 // Save transactions list
 export function saveTransactionsList(transactions: Transaction[]): void {
   try {
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
+    secureStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
   } catch (err) {
     console.error('Errore salvataggio transazioni locali:', err);
   }
@@ -252,7 +253,7 @@ export function deleteTransactionLocal(id: string): QueueItem | null {
 // Queue accessors
 export function getStoredQueue(): QueueItem[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.QUEUE);
+    const raw = secureStorage.getItem(STORAGE_KEYS.QUEUE);
     if (!raw) return [];
     return JSON.parse(raw) as QueueItem[];
   } catch (err) {
@@ -263,7 +264,7 @@ export function getStoredQueue(): QueueItem[] {
 
 export function saveStoredQueue(queue: QueueItem[]): void {
   try {
-    localStorage.setItem(STORAGE_KEYS.QUEUE, JSON.stringify(queue));
+    secureStorage.setItem(STORAGE_KEYS.QUEUE, JSON.stringify(queue));
   } catch (err) {
     console.error('Errore salvataggio coda:', err);
   }
@@ -277,7 +278,7 @@ export function removeQueueItem(queueItemId: string): void {
 // Theme storage
 export function getStoredTheme(): ThemeMode {
   try {
-    const t = localStorage.getItem(STORAGE_KEYS.THEME);
+    const t = secureStorage.getItem(STORAGE_KEYS.THEME);
     if (t === 'black' || t === 'light' || t === 'dark') {
       return t;
     }
@@ -287,14 +288,14 @@ export function getStoredTheme(): ThemeMode {
 
 export function saveStoredTheme(theme: ThemeMode): void {
   try {
-    localStorage.setItem(STORAGE_KEYS.THEME, theme);
+    secureStorage.setItem(STORAGE_KEYS.THEME, theme);
   } catch {}
 }
 
 // Custom categories storage
 export function getStoredCustomCategories(): { expense: string[]; income: string[] } {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.CUSTOM_CATEGORIES);
+    const raw = secureStorage.getItem(STORAGE_KEYS.CUSTOM_CATEGORIES);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.expense) && Array.isArray(parsed.income)) {
@@ -310,14 +311,14 @@ export function getStoredCustomCategories(): { expense: string[]; income: string
 
 export function saveStoredCustomCategories(cats: { expense: string[]; income: string[] }): void {
   try {
-    localStorage.setItem(STORAGE_KEYS.CUSTOM_CATEGORIES, JSON.stringify(cats));
+    secureStorage.setItem(STORAGE_KEYS.CUSTOM_CATEGORIES, JSON.stringify(cats));
   } catch {}
 }
 
 // Monthly Spending Limit Budget storage
 export function getStoredMonthlyBudget(): number {
   try {
-    const val = localStorage.getItem(STORAGE_KEYS.MONTHLY_BUDGET);
+    const val = secureStorage.getItem(STORAGE_KEYS.MONTHLY_BUDGET);
     if (val !== null) {
       const num = parseFloat(val);
       if (!isNaN(num) && num > 0) {
@@ -330,14 +331,14 @@ export function getStoredMonthlyBudget(): number {
 
 export function saveStoredMonthlyBudget(amount: number): void {
   try {
-    localStorage.setItem(STORAGE_KEYS.MONTHLY_BUDGET, String(amount));
+    secureStorage.setItem(STORAGE_KEYS.MONTHLY_BUDGET, String(amount));
   } catch {}
 }
 
 // Clear all data
 export function clearAllLocalTransactions(): void {
   try {
-    localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
-    localStorage.removeItem(STORAGE_KEYS.QUEUE);
+    secureStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
+    secureStorage.removeItem(STORAGE_KEYS.QUEUE);
   } catch {}
 }

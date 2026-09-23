@@ -238,11 +238,10 @@ export const FinancialTelematicsCard: React.FC<FinancialTelematicsCardProps> = (
     >
       {/* Responsive Grid: Status & Net Balance on Left, Budget Limit & Overview on Right */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-6 items-stretch">
-        {/* Left Column (Status & Hero Net Balance) */}
-        <div className="md:col-span-6 lg:col-span-6 flex flex-col justify-between space-y-4">
-          {/* Header Status Typography */}
-          <div className="border-b border-app-subtle pb-4">
-            <div className="flex items-center justify-between gap-2 mb-2">
+        {/* Left Column (Status & Telematics) */}
+        <div className="md:col-span-6 lg:col-span-6 flex flex-col justify-between p-4 sm:p-5 rounded-2xl bg-app-subtle border border-app space-y-4">
+          <div>
+            <div className="flex items-center justify-between gap-2 mb-2.5">
               <span
                 className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono-code font-bold border ${statusInfo.badgeClass}`}
               >
@@ -265,63 +264,26 @@ export const FinancialTelematicsCard: React.FC<FinancialTelematicsCardProps> = (
               </span>
             </div>
 
-            <div className="select-none pt-0.5">
+            <div className="select-none pt-1">
               <div className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[0.95] text-app-main uppercase font-sans">
                 {statusInfo.title}
               </div>
             </div>
-            <p className="text-xs text-app-sub font-mono-code leading-relaxed pt-2.5">
+            <p className="text-xs sm:text-sm text-app-sub font-mono-code leading-relaxed pt-3">
               {statusInfo.comment}
             </p>
           </div>
 
-          {/* Hero Net Balance */}
-          <div className="p-4 rounded-2xl bg-app-subtle border border-app">
-            <div className="flex items-center justify-between text-xs font-mono-code text-app-muted mb-1">
-              <span className="uppercase tracking-wider font-bold text-[10px]">
-                {t('net_balance')}
-              </span>
-              <span className="font-bold text-[10px] text-app-main">
-                {savingsRate >= 0
-                  ? `${t('savings_margin')} +${savingsRate}%`
-                  : `${t('deficit_margin')} ${savingsRate}%`}
-              </span>
-            </div>
-
-            <div className="flex items-baseline justify-between gap-2">
-              <div
-                className={`text-3xl sm:text-4xl font-mono-code font-black tracking-tight ${
-                  netBalance >= 0 ? 'text-emerald-500' : 'text-red-500'
-                }`}
-              >
-                {netBalance >= 0 ? '+' : ''}
-                {formatEUR(netBalance)}
-              </div>
-              <div className="text-[11px] font-mono-code text-app-muted">
-                {monthTransactions.length}{' '}
-                {monthTransactions.length === 1
-                  ? t('transaction_singular')
-                  : t('transaction_plural')}
-              </div>
-            </div>
-
-            {/* Elegant Progress Track */}
-            <div className="w-full h-1.5 rounded-full bg-app-card overflow-hidden mt-3 border border-app-subtle">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  netBalance >= 0 ? 'bg-emerald-500' : 'bg-red-500'
-                }`}
-                style={{
-                  width: `${
-                    totalIncome > 0
-                      ? Math.min(100, Math.max(5, Math.round((netBalance / totalIncome) * 100)))
-                      : totalExpense > 0
-                      ? 100
-                      : 0
-                  }%`,
-                }}
-              />
-            </div>
+          <div className="pt-3 border-t border-app flex items-center justify-between text-[11px] font-mono-code text-app-muted">
+            <span className="uppercase tracking-wider text-[10px] font-bold text-app-muted">
+              {t('transactions_ledger')}
+            </span>
+            <span>
+              {monthTransactions.length}{' '}
+              {monthTransactions.length === 1
+                ? t('transaction_singular')
+                : t('transaction_plural')}
+            </span>
           </div>
         </div>
 

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Strictly disallow all cleartext HTTP traffic for production Google Play Store release -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Specific HTTPS domain restrictions with strict certificate validation -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">stonks.app</domain>
+        <domain includeSubdomains="true">run.app</domain>
+        <domain includeSubdomains="true">firebaseio.com</domain>
+        <domain includeSubdomains="true">googleapis.com</domain>
+    </domain-config>
+</network-security-config>
