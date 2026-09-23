@@ -23,6 +23,7 @@ import {
   Filter,
   Check,
   X,
+  Calendar,
 } from 'lucide-react';
 import { Transaction, TimeFilterPeriod } from '../types.ts';
 import { useLanguage } from '../services/i18n.ts';
@@ -64,6 +65,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [movementTypeFilter, setMovementTypeFilter] = useState<'all' | 'expense' | 'income'>('all');
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
+  const [isDateFilterOpen, setIsDateFilterOpen] = useState<boolean>(false); // Closed by default as requested
 
   // Search & Multi-Select Category Filters for Reports
   const [reportSearchQuery, setReportSearchQuery] = useState<string>('');
@@ -264,65 +266,104 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
 
   return (
     <div id="tab-reports" className="w-full space-y-4 pb-12">
-      {/* 1. Sleek Minimalist Scope Selector */}
-      <div className="rounded-3xl border border-app bg-app-card p-3.5 sm:p-4 backdrop-blur-md shadow-sm transition-all space-y-2.5">
-        {/* Year Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
-          <span className="text-[10px] font-mono-code uppercase text-app-muted font-bold tracking-wider mr-1 shrink-0">
-            {t('filter_year')}:
-          </span>
+      {/* 1. Sleek Minimalist Scope Selector - Closed by default as requested */}
+      <div className="rounded-3xl border border-app bg-app-card backdrop-blur-md shadow-sm transition-all overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setIsDateFilterOpen((prev) => !prev)}
+          className="w-full p-3.5 sm:p-4 flex items-center justify-between gap-3 text-left hover:bg-app-subtle/50 transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-xl bg-app-subtle border border-app flex items-center justify-center text-emerald-500 shrink-0">
+              <Calendar className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-xs font-mono-code font-bold uppercase tracking-wider text-app-main block">
+                {t('filter_month_year')}
+              </span>
+              <span className="text-[10px] font-mono-code text-app-muted">
+                {selectedYear === 'all' && selectedMonth === 'all'
+                  ? t('filter_all')
+                  : `${selectedMonth !== 'all' ? months.find((m) => m.id === selectedMonth)?.short : t('filter_all')} • ${selectedYear !== 'all' ? selectedYear : t('filter_all')}`}
+              </span>
+            </div>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => setSelectedYear('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-mono-code transition-all cursor-pointer whitespace-nowrap ${
-              selectedYear === 'all'
-                ? 'bg-app-subtle text-app-main font-bold border border-emerald-500/50 shadow-xs'
-                : 'text-app-muted hover:text-app-main border border-transparent'
-            }`}
-          >
-            {t('filter_all')}
-          </button>
+          <div className="flex items-center gap-2">
+            {(selectedYear !== 'all' || selectedMonth !== 'all') && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono-code bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 font-bold">
+                {selectedYear !== 'all' ? selectedYear : ''} {selectedMonth !== 'all' ? months.find((m) => m.id === selectedMonth)?.short : ''}
+              </span>
+            )}
+            {isDateFilterOpen ? (
+              <ChevronDown className="w-4 h-4 text-app-muted" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-app-muted" />
+            )}
+          </div>
+        </button>
 
-          {availableYears.map((yr) => (
-            <button
-              key={yr}
-              type="button"
-              onClick={() => setSelectedYear(yr)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-mono-code transition-all cursor-pointer whitespace-nowrap ${
-                selectedYear === yr
-                  ? 'bg-app-subtle text-app-main font-bold border border-emerald-500/50 shadow-xs'
-                  : 'text-app-muted hover:text-app-main border border-transparent'
-              }`}
-            >
-              {yr}
-            </button>
-          ))}
-        </div>
+        {isDateFilterOpen && (
+          <div className="p-3.5 sm:p-4 pt-1 border-t border-app-subtle space-y-2.5 animate-in fade-in duration-150">
+            {/* Year Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+              <span className="text-[10px] font-mono-code uppercase text-app-muted font-bold tracking-wider mr-1 shrink-0">
+                {t('filter_year')}:
+              </span>
 
-        {/* Month Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-1.5 border-t border-app-subtle">
-          <span className="text-[10px] font-mono-code uppercase text-app-muted font-bold tracking-wider mr-1 shrink-0">
-            {t('filter_month')}:
-          </span>
-          {months.map((m) => {
-            const isSelected = selectedMonth === m.id;
-            return (
               <button
-                key={m.id}
                 type="button"
-                onClick={() => setSelectedMonth(m.id)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-mono-code transition-all cursor-pointer whitespace-nowrap ${
-                  isSelected
-                    ? 'bg-app-subtle text-app-main font-bold border border-app shadow-xs'
-                    : 'text-app-muted hover:text-app-main'
+                onClick={() => setSelectedYear('all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-mono-code transition-all cursor-pointer whitespace-nowrap ${
+                  selectedYear === 'all'
+                    ? 'bg-app-subtle text-app-main font-bold border border-emerald-500/50 shadow-xs'
+                    : 'text-app-muted hover:text-app-main border border-transparent'
                 }`}
               >
-                {m.short}
+                {t('filter_all')}
               </button>
-            );
-          })}
-        </div>
+
+              {availableYears.map((yr) => (
+                <button
+                  key={yr}
+                  type="button"
+                  onClick={() => setSelectedYear(yr)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono-code transition-all cursor-pointer whitespace-nowrap ${
+                    selectedYear === yr
+                      ? 'bg-app-subtle text-app-main font-bold border border-emerald-500/50 shadow-xs'
+                    : 'text-app-muted hover:text-app-main border border-transparent'
+                  }`}
+                >
+                  {yr}
+                </button>
+              ))}
+            </div>
+
+            {/* Month Pills */}
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-1.5 border-t border-app-subtle">
+              <span className="text-[10px] font-mono-code uppercase text-app-muted font-bold tracking-wider mr-1 shrink-0">
+                {t('filter_month')}:
+              </span>
+              {months.map((m) => {
+                const isSelected = selectedMonth === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setSelectedMonth(m.id)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-mono-code transition-all cursor-pointer whitespace-nowrap ${
+                      isSelected
+                        ? 'bg-app-subtle text-app-main font-bold border border-app shadow-xs'
+                        : 'text-app-muted hover:text-app-main'
+                    }`}
+                  >
+                    {m.short}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tablet 2-Column Responsive Layout */}
@@ -511,7 +552,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
             ) : (
               sortedGroupKeys.map((key) => {
                 const group = groupedMonths[key];
-                const isExpanded = expandedMonths[key] !== false; // expanded by default
+                const isExpanded = !!expandedMonths[key]; // collapsed by default as requested
 
                 return (
                   <div

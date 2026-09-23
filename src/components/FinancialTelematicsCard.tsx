@@ -141,7 +141,8 @@ export const FinancialTelematicsCard: React.FC<FinancialTelematicsCardProps> = (
       };
     }
 
-    if (totalExpense > monthlyBudget && monthlyBudget > 0) {
+    // 1. Budget Exceeded
+    if (monthlyBudget > 0 && totalExpense > monthlyBudget) {
       return {
         title: t('status_budget_exceeded'),
         badge: t('badge_limit_surpassed'),
@@ -157,7 +158,8 @@ export const FinancialTelematicsCard: React.FC<FinancialTelematicsCardProps> = (
       };
     }
 
-    if (budgetSpentPercent >= 80 && monthlyBudget > 0) {
+    // 2. Budget Near Limit (>= 85%)
+    if (monthlyBudget > 0 && budgetSpentPercent >= 85) {
       return {
         title: t('status_budget_near_limit'),
         badge: t('badge_near_limit'),
@@ -175,25 +177,8 @@ export const FinancialTelematicsCard: React.FC<FinancialTelematicsCardProps> = (
       };
     }
 
-    if (netBalance >= 0 && (savingsRate >= 20 || totalExpense === 0)) {
-      return {
-        title: t('status_optimal'),
-        badge: t('badge_optimal'),
-        badgeClass: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
-        accentColor: 'text-emerald-500',
-        comment: t('comment_optimal', {
-          budget: formattedBudget,
-          spent: formattedSpent,
-          percent: budgetSpentPercent,
-          remaining: formattedRemaining,
-          dailyRemaining: formattedDailyRemaining,
-          daysRemaining,
-        }),
-        icon: CheckCircle2,
-      };
-    }
-
-    if (netBalance >= 0) {
+    // 3. Balanced / In Rhythm (60% - 84% of budget)
+    if (monthlyBudget > 0 && budgetSpentPercent >= 60) {
       return {
         title: t('status_on_track'),
         badge: t('badge_balanced'),
@@ -205,39 +190,28 @@ export const FinancialTelematicsCard: React.FC<FinancialTelematicsCardProps> = (
           percent: budgetSpentPercent,
           remaining: formattedRemaining,
           dailyRemaining: formattedDailyRemaining,
+          daysRemaining,
         }),
         icon: ShieldCheck,
       };
     }
 
-    if (netBalance < 0 && netBalance >= -350) {
-      return {
-        title: t('status_warning'),
-        badge: t('badge_high_outflow'),
-        badgeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30',
-        accentColor: 'text-amber-500',
-        comment: t('comment_warning', {
-          spent: formattedSpent,
-          budget: formattedBudget,
-          percent: budgetSpentPercent,
-          remaining: formattedRemaining,
-          daysRemaining,
-        }),
-        icon: AlertTriangle,
-      };
-    }
-
+    // 4. Well Within Budget (< 60% of budget or general optimal state)
+    // As explicitly requested: income is secondary; "TUTTO OK" is shown whenever within budget!
     return {
-      title: t('status_deficit'),
-      badge: t('badge_deficit'),
-      badgeClass: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30',
-      accentColor: 'text-red-500',
-      comment: t('comment_deficit', {
-        spent: formattedSpent,
+      title: t('status_optimal'),
+      badge: t('badge_optimal'),
+      badgeClass: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+      accentColor: 'text-emerald-500',
+      comment: t('comment_optimal', {
         budget: formattedBudget,
+        spent: formattedSpent,
+        percent: budgetSpentPercent,
         remaining: formattedRemaining,
+        dailyRemaining: formattedDailyRemaining,
+        daysRemaining,
       }),
-      icon: AlertOctagon,
+      icon: CheckCircle2,
     };
   }, [
     monthTransactions.length,

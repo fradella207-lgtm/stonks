@@ -178,6 +178,16 @@ export default function App() {
       setPendingCount(count);
     });
 
+    // 4. Smoothly fade out the entry splash screen once app is hydrated
+    const splash = document.getElementById('app-splash');
+    if (splash) {
+      setTimeout(() => {
+        splash.style.opacity = '0';
+        splash.style.visibility = 'hidden';
+        setTimeout(() => splash.remove(), 400);
+      }, 300);
+    }
+
     return () => {
       unsubAuth();
       unsubFirebaseSync();
@@ -342,7 +352,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-app-canvas text-app-main flex flex-col justify-between selection:bg-red-600 selection:text-white pb-24 transition-colors">
+    <div className="min-h-screen bg-app-canvas text-app-main flex flex-col justify-between selection:bg-red-600 selection:text-white pb-32 sm:pb-36 transition-colors">
       {/* Background Subtle Dot Pattern (Nothing OS aesthetic) */}
       <div className="fixed inset-0 bg-dots pointer-events-none opacity-30 z-0" />
 

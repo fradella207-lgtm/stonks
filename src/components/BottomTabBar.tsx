@@ -41,13 +41,13 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
 
       {/* Floating Speed Dial Mini-Menu - Perfectly Centered and Symmetrical */}
       {isSpeedDialOpen && (
-        <div className="fixed bottom-[calc(max(0.5rem,env(safe-area-inset-bottom,0px))+68px)] left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200 w-full max-w-sm px-4 pointer-events-auto">
+        <div className="fixed bottom-[calc(max(0.85rem,env(safe-area-inset-bottom,16px))+72px)] left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200 w-full max-w-sm px-4 pointer-events-auto">
           {/* Expense Option (- Expense) */}
           <button
             id="btn-speed-dial-expense"
             type="button"
             onClick={() => handleSelectOption('expense')}
-            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-app-modal border border-red-500/40 text-app-main shadow-[0_8px_30px_rgba(220,38,38,0.3)] hover:scale-105 active:scale-95 transition-all cursor-pointer group backdrop-blur-xl"
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-app-modal border border-red-500/40 text-app-main shadow-[0_8px_30px_rgba(220,38,38,0.3)] hover:scale-105 active:scale-95 transition-all cursor-pointer group backdrop-blur-xl"
           >
             <span className="w-6 h-6 rounded-xl bg-red-600/20 text-red-500 border border-red-500/40 flex items-center justify-center font-mono-code font-bold text-xs group-hover:bg-red-600 group-hover:text-white transition-colors shrink-0">
               <ArrowDownRight className="w-4 h-4" />
@@ -62,7 +62,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
             id="btn-speed-dial-income"
             type="button"
             onClick={() => handleSelectOption('income')}
-            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-app-modal border border-emerald-500/40 text-app-main shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:scale-105 active:scale-95 transition-all cursor-pointer group backdrop-blur-xl"
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-app-modal border border-emerald-500/40 text-app-main shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:scale-105 active:scale-95 transition-all cursor-pointer group backdrop-blur-xl"
           >
             <span className="w-6 h-6 rounded-xl bg-emerald-600/20 text-emerald-500 border border-emerald-500/40 flex items-center justify-center font-mono-code font-bold text-xs group-hover:bg-emerald-600 group-hover:text-white transition-colors shrink-0">
               <ArrowUpRight className="w-4 h-4" />
@@ -75,11 +75,11 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
       )}
 
       {/* Main Bottom Bar with Safe-Area padding for iOS Home Indicator & Android Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-app-tabbar backdrop-blur-2xl border-t border-app pb-safe transition-colors shadow-2xl">
-        {/* Extended background bleed downwards below bottom edge so color NEVER stops short on Android */}
+      <nav aria-label="Bottom Navigation" className="fixed bottom-0 left-0 right-0 z-40 bg-app-tabbar backdrop-blur-2xl border-t border-app pb-[max(0.85rem,env(safe-area-inset-bottom,16px))] transition-colors shadow-2xl">
+        {/* Extended background bleed downwards below bottom edge so color NEVER stops short on Android navigation bar or overscroll */}
         <div className="absolute top-0 -bottom-48 left-0 right-0 bg-app-tabbar -z-10 pointer-events-none" />
 
-        <div className="max-w-xl md:max-w-2xl mx-auto w-full flex items-center justify-between px-6 sm:px-12 h-[58px] sm:h-[64px]">
+        <div className="max-w-xl md:max-w-2xl mx-auto w-full flex items-center justify-between px-6 sm:px-12 h-[62px] sm:h-[68px]">
           {/* Tab 1: Activity */}
           <button
             id="btn-tab-history"
@@ -150,7 +150,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
             )}
           </button>
         </div>
-      </div>
+      </nav>
     </>
   );
 };

@@ -102,16 +102,14 @@ export function triggerStonksIfPositive(currentNet: number, isInitialMount: bool
     return;
   }
 
-  // Case 1: Transition into positive (Net > 0 from <= 0) -> STONKS
+  // Case 1: Transition into positive (Net > 0 from <= 0) -> STONKS Chime & Confetti
   if (previousNetState <= 0 && currentNet > 0) {
     playStonksAudio();
     launchStonksConfetti();
-    showMemeModal('stonks');
   }
-  // Case 2: Transition into negative (Net < 0 from >= 0) -> NOT STONKS
+  // Case 2: Transition into negative (Net < 0 from >= 0) -> Decline sound
   else if (previousNetState >= 0 && currentNet < 0) {
     playNotStonksAudio();
-    showMemeModal('not-stonks');
   }
 
   previousNetState = currentNet;
@@ -179,53 +177,10 @@ export function launchStonksConfetti(): void {
 }
 
 /**
- * Displays either the Stonks or Not Stonks meme modal overlay and auto-hides after 2.8 seconds
+ * Displays feedback modal if present (safe no-op if omitted for minimal UI)
  */
-export function showMemeModal(type: 'stonks' | 'not-stonks'): void {
-  const modal = document.getElementById('stonksModal');
-  const card = document.getElementById('stonksModalCard');
-  const img = document.getElementById('stonksModalImg') as HTMLImageElement | null;
-  const title = document.getElementById('stonksModalTitle');
-  const subtitle = document.getElementById('stonksModalSubtitle');
-
-  if (!modal || !card) return;
-
-  if (dismissTimer) {
-    clearTimeout(dismissTimer);
-    dismissTimer = null;
-  }
-
-  if (type === 'stonks') {
-    if (img) img.src = '/stonks.jpg';
-    if (title) {
-      title.textContent = 'STONKS! 📈';
-      title.className = 'text-2xl font-black text-emerald-400 tracking-wider uppercase font-mono-code';
-    }
-    if (subtitle) {
-      subtitle.textContent = 'Bilancio mensile in attivo! Ottima gestione.';
-    }
-    card.className =
-      'bg-slate-900 border-2 border-emerald-500/50 rounded-3xl p-5 text-center shadow-[0_0_50px_rgba(16,185,129,0.3)] max-w-xs w-full transform scale-95 transition-all';
-  } else {
-    if (img) img.src = '/not-stonks.jpg';
-    if (title) {
-      title.textContent = 'NOT STONKS! 📉';
-      title.className = 'text-2xl font-black text-red-500 tracking-wider uppercase font-mono-code';
-    }
-    if (subtitle) {
-      subtitle.textContent = 'Attenzione: le uscite hanno superato le entrate.';
-    }
-    card.className =
-      'bg-slate-900 border-2 border-red-500/50 rounded-3xl p-5 text-center shadow-[0_0_50px_rgba(239,68,68,0.3)] max-w-xs w-full transform scale-95 transition-all';
-  }
-
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-
-  dismissTimer = setTimeout(() => {
-    modal.classList.remove('flex');
-    modal.classList.add('hidden');
-  }, 2800);
+export function showMemeModal(_type: 'stonks' | 'not-stonks'): void {
+  // Meme overlay modal removed in favor of clean Nothing OS minimalism and splash screen
 }
 
 /**
@@ -235,10 +190,8 @@ export function triggerTransactionEffect(type: 'income' | 'expense'): void {
   if (type === 'income') {
     playStonksAudio();
     launchStonksConfetti();
-    showMemeModal('stonks');
   } else {
     playNotStonksAudio();
-    showMemeModal('not-stonks');
   }
 }
 
