@@ -25,6 +25,9 @@ import {
   getAdditionalUserInfo,
   setPersistence,
   browserLocalPersistence,
+  sendPasswordResetEmail,
+  sendEmailVerification,
+  reload,
   User,
 } from 'firebase/auth';
 import { auth, db, googleProvider } from './firebase.ts';
@@ -113,6 +116,7 @@ class FirebaseSyncService {
           email: user.email,
           displayName: user.displayName || (user.isAnonymous ? 'Ospite Locale' : 'Utente'),
           photoURL: user.photoURL,
+          emailVerified: user.emailVerified ?? false,
         };
         try {
           localStorage.setItem('stonks_auth_cached_user_v2', JSON.stringify(this.currentUser));
@@ -182,6 +186,7 @@ class FirebaseSyncService {
         email: u.email,
         displayName: u.displayName || 'Utente Google',
         photoURL: u.photoURL,
+        emailVerified: u.emailVerified ?? true,
       };
       this.currentUser = profile;
       this.notifyAuth();
@@ -213,11 +218,19 @@ class FirebaseSyncService {
         await updateProfile(u, { displayName: name });
       }
 
+      // Automatically trigger email verification for new account
+      try {
+        await sendEmailVerification(u);
+      } catch (verifErr) {
+        console.warn('Could not auto-send verification email:', verifErr);
+      }
+
       const profile: UserProfile = {
         uid: u.uid,
         email: u.email,
         displayName: name || u.email?.split('@')[0] || 'Utente',
         photoURL: u.photoURL,
+        emailVerified: u.emailVerified ?? false,
       };
       this.currentUser = profile;
       this.notifyAuth();
@@ -247,6 +260,7 @@ class FirebaseSyncService {
         email: u.email,
         displayName: u.displayName || u.email?.split('@')[0] || 'Utente',
         photoURL: u.photoURL,
+        emailVerified: u.emailVerified ?? false,
       };
       this.currentUser = profile;
       this.notifyAuth();
@@ -261,6 +275,42 @@ class FirebaseSyncService {
     }
   }
 
+  // Send Password Reset Email
+  public async sendPasswordReset(email: string): Promise<void> {
+    if (!email || !email.trim()) {
+      throw new Error('Inserisci un indirizzo email valido.');
+    }
+    await sendPasswordResetEmail(auth, email.trim());
+  }
+
+  // Resend Email Verification to currently logged-in user
+  public async sendVerificationEmail(): Promise<void> {
+    if (!auth.currentUser) {
+      throw new Error('Nessun utente autenticato.');
+    }
+    await sendEmailVerification(auth.currentUser);
+  }
+
+  // Reload current user state (e.g. after clicking verification email link)
+  public async reloadCurrentUser(): Promise<UserProfile | null> {
+    if (!auth.currentUser) return null;
+    await reload(auth.currentUser);
+    const u = auth.currentUser;
+    const profile: UserProfile = {
+      uid: u.uid,
+      email: u.email,
+      displayName: u.displayName || (u.isAnonymous ? 'Ospite Locale' : 'Utente'),
+      photoURL: u.photoURL,
+      emailVerified: u.emailVerified ?? false,
+    };
+    this.currentUser = profile;
+    try {
+      localStorage.setItem('stonks_auth_cached_user_v2', JSON.stringify(profile));
+    } catch (e) {}
+    this.notifyAuth();
+    return profile;
+  }
+
   // Anonymous Guest Login
   public async loginAsGuest(): Promise<UserProfile> {
     try {
@@ -272,6 +322,7 @@ class FirebaseSyncService {
         email: null,
         displayName: 'Ospite (Offline-First)',
         photoURL: null,
+        emailVerified: true,
       };
       this.currentUser = profile;
       this.notifyAuth();

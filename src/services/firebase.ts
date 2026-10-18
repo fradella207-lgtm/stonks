@@ -11,5 +11,8 @@ import { firebaseConfig } from './firebaseConfig.ts';
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || '(default)');
+export const db =
+  firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
+    ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
+    : getFirestore(app);
 export default app;

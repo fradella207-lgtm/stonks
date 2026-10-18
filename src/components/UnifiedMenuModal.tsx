@@ -25,9 +25,15 @@ import {
   ChevronRight,
   Target,
   Languages,
+  Database,
+  MailCheck,
+  CheckCircle2,
 } from 'lucide-react';
 import { AppSyncState, ThemeMode, UserProfile } from '../types.ts';
 import { FeedbackModal } from './FeedbackModal.tsx';
+import { FirebaseConfigModal } from './FirebaseConfigModal.tsx';
+import { firebaseSyncService } from '../services/firebaseSync.ts';
+import { getActiveFirebaseConfig } from '../services/firebaseConfig.ts';
 import { useLanguage, SUPPORTED_LANGUAGES, SupportedLanguage } from '../services/i18n.ts';
 
 interface UnifiedMenuModalProps {
@@ -68,6 +74,54 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
   const [showFeedbackModal, setShowFeedbackModal] = useState<boolean>(false);
   const [isEditingBudget, setIsEditingBudget] = useState<boolean>(false);
   const [budgetValue, setBudgetValue] = useState<string>(String(monthlyBudget || 1500));
+  const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState<boolean>(false);
+  const [verificationMsg, setVerificationMsg] = useState<{ text: string; success: boolean } | null>(null);
+  const [isVerifying, setIsVerifying] = useState<boolean>(false);
+
+  const handleSendVerificationEmail = async () => {
+    setIsVerifying(true);
+    setVerificationMsg(null);
+    try {
+      await firebaseSyncService.sendVerificationEmail();
+      setVerificationMsg({
+        text: 'Email di verifica inviata! Controlla la tua casella di posta.',
+        success: true,
+      });
+    } catch (e: any) {
+      setVerificationMsg({
+        text: e.message || 'Impossibile inviare l\'email di verifica.',
+        success: false,
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleReloadUser = async () => {
+    setIsVerifying(true);
+    setVerificationMsg(null);
+    try {
+      const updated = await firebaseSyncService.reloadCurrentUser();
+      if (updated?.emailVerified) {
+        setVerificationMsg({
+          text: 'Account verificato con successo!',
+          success: true,
+        });
+      } else {
+        setVerificationMsg({
+          text: 'Email non ancora verificata. Clicca sul link ricevuto prima di verificare lo stato.',
+          success: false,
+        });
+      }
+    } catch (e: any) {
+      setVerificationMsg({
+        text: e.message || 'Errore durante la verifica.',
+        success: false,
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -241,6 +295,72 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
                     </button>
                   </div>
                 )}
+              </div>
+
+              {/* Email Verification Box (shown if logged in user email is unverified) */}
+              {user && user.email && user.emailVerified === false && (
+                <div className="pt-2.5 border-t border-app-subtle space-y-2">
+                  <div className="flex items-center justify-between text-[10px] text-amber-400 font-bold uppercase">
+                    <span className="flex items-center gap-1.5">
+                      <MailCheck className="w-3.5 h-3.5" />
+                      <span>Verifica Email Account</span>
+                    </span>
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-950/60 border border-amber-500/30 text-amber-300">
+                      Non verificata
+                    </span>
+                  </div>
+
+                  {verificationMsg && (
+                    <div
+                      className={`p-2 rounded-xl text-[10px] flex items-center gap-1.5 ${
+                        verificationMsg.success
+                          ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-red-950/40 text-red-300 border border-red-500/30'
+                      }`}
+                    >
+                      {verificationMsg.success ? (
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-3 h-3 text-red-400 shrink-0" />
+                      )}
+                      <span>{verificationMsg.text}</span>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSendVerificationEmail}
+                      disabled={isVerifying}
+                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-app-card border border-app hover:bg-app-hover text-app-main text-[10px] font-bold transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      Invia di nuovo email
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleReloadUser}
+                      disabled={isVerifying}
+                      className="py-1.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-[10px] font-bold transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      Aggiorna stato
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Direct Firebase Android Project Connection Button */}
+              <div className="pt-2 border-t border-app-subtle">
+                <button
+                  type="button"
+                  onClick={() => setIsFirebaseModalOpen(true)}
+                  className="w-full p-2.5 rounded-xl bg-app-card hover:bg-app-hover border border-app flex items-center justify-between text-app-sub hover:text-app-main transition-colors cursor-pointer text-left"
+                >
+                  <div className="flex items-center gap-2 text-[11px] font-bold">
+                    <Database className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span>Progetto Firebase & Sincronizzazione Android</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-app-muted" />
+                </button>
               </div>
             </div>
           </div>
@@ -512,6 +632,12 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
         isOpen={showFeedbackModal}
         onClose={() => setShowFeedbackModal(false)}
         user={user}
+      />
+
+      {/* Firebase Project Connection Modal */}
+      <FirebaseConfigModal
+        isOpen={isFirebaseModalOpen}
+        onClose={() => setIsFirebaseModalOpen(false)}
       />
     </div>
   );
