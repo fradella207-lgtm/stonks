@@ -34,11 +34,13 @@ export function getActiveFirebaseConfig(): FirebaseConfigObject {
     const custom = localStorage.getItem('stonks_custom_firebase_config');
     if (custom) {
       const parsed = JSON.parse(custom);
-      if (parsed.projectId && parsed.apiKey && parsed.appId) {
+      if (parsed.projectId === defaultFirebaseConfig.projectId) {
         return {
           ...defaultFirebaseConfig,
           ...parsed,
         };
+      } else {
+        localStorage.removeItem('stonks_custom_firebase_config');
       }
     }
   } catch (e) {

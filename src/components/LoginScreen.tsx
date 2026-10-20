@@ -213,41 +213,28 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
       <div className="absolute -bottom-32 -right-32 w-80 h-80 rounded-full bg-emerald-500/10 blur-[100px] pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-md bg-app-modal border border-app rounded-[32px] p-5 sm:p-8 shadow-2xl backdrop-blur-xl">
-        {/* Firebase Sync with Android Banner Header */}
-        <div className="mb-4 p-2.5 rounded-2xl bg-app-subtle/80 border border-app flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
-              <Smartphone className="w-3.5 h-3.5" />
+        {/* Firebase Android Sync Status Banner (Automatic 1:1 Connection) */}
+        <div className="mb-4 p-3 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+              <Smartphone className="w-4 h-4" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-mono-code font-bold uppercase text-app-sub">
-                  Firebase Android Sync:
-                </span>
-                <span
-                  className={`text-[9px] font-mono-code px-1.5 py-0.2 rounded ${
-                    isCustomProject
-                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                      : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                  }`}
-                >
-                  {isCustomProject ? 'Android Attivo' : 'Predefinito'}
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[10px] font-mono-code font-bold uppercase tracking-wider text-emerald-400">
+                  Firebase Android Collegato
                 </span>
               </div>
-              <p className="text-[11px] font-mono-code text-app-muted truncate">
-                {activeConfig.projectId}
+              <p className="text-[11px] font-mono-code text-app-sub truncate">
+                Progetto: <span className="text-app-main font-semibold">{activeConfig.projectId}</span>
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsFirebaseModalOpen(true)}
-            className="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40 text-[10px] font-mono-code font-bold shrink-0 transition-colors cursor-pointer flex items-center gap-1"
-            title="Collega Firebase Android"
-          >
-            <Database className="w-3 h-3" />
-            <span>Collega</span>
-          </button>
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono-code text-emerald-400 shrink-0 font-medium">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>Sincronizzato</span>
+          </div>
         </div>
 
         {/* Header Branding */}
@@ -294,14 +281,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
           <button
             type="button"
             onClick={() => handleTabChange('forgot')}
-            className={`py-2 text-center rounded-xl text-xs font-mono-code transition-all cursor-pointer flex items-center justify-center gap-1 ${
+            className={`py-2 px-1 text-center rounded-xl text-xs font-mono-code transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               activeTab === 'forgot'
                 ? 'bg-app-card text-amber-400 font-bold shadow-sm border border-amber-500/40'
                 : 'text-app-muted hover:text-amber-400'
             }`}
           >
-            <KeyRound className="w-3 h-3" />
-            <span>Recupera</span>
+            <KeyRound className="w-3.5 h-3.5" />
+            <span className="truncate">Password dimenticata</span>
           </button>
         </div>
 
@@ -499,13 +486,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
 
               {/* Explicit, unmistakable "Password Dimenticata?" link right under password input */}
               {activeTab === 'login' && (
-                <div className="flex justify-end pt-1">
+                <div className="flex items-center justify-between pt-1.5 pb-0.5">
+                  <span className="text-[10px] text-app-muted">Non ricordi la password?</span>
                   <button
                     type="button"
                     onClick={() => handleTabChange('forgot')}
-                    className="text-[11px] font-mono-code text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                    className="text-[11px] font-mono-code text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
-                    <KeyRound className="w-3 h-3" />
+                    <KeyRound className="w-3.5 h-3.5" />
                     <span>Password dimenticata?</span>
                   </button>
                 </div>
@@ -578,22 +566,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
           </>
         )}
 
-        {/* Bottom Link to connect Android Firebase project */}
-        <div className="mt-5 pt-3 border-t border-app-subtle flex flex-col items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsFirebaseModalOpen(true)}
-            className="w-full py-2 px-3 rounded-xl bg-app-subtle hover:bg-app-hover border border-app text-app-sub hover:text-app-main font-mono-code text-[11px] flex items-center justify-center gap-2 transition-colors cursor-pointer"
-          >
-            <Database className="w-3.5 h-3.5 text-amber-500" />
-            <span>Configura / Incolla dati Firebase Android</span>
-          </button>
-
-          {/* Security badge */}
-          <div className="flex items-center justify-center gap-2 text-[10px] font-mono-code text-app-muted mt-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Autenticazione sicura • Dati protetti</span>
+        {/* Security and automatic Android backend connection footer */}
+        <div className="mt-5 pt-3.5 border-t border-app-subtle flex flex-col items-center gap-1.5 text-center">
+          <div className="flex items-center justify-center gap-2 text-[11px] font-mono-code text-emerald-400 font-medium">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>Connessione diretta Firebase con app Android attiva</span>
           </div>
+          <p className="text-[10px] font-mono-code text-app-muted">
+            Transazioni e profilo sincronizzati in tempo reale
+          </p>
         </div>
       </div>
 
