@@ -24,6 +24,10 @@ export interface Transaction {
   location?: string;     // Optional place/store name (e.g. "Esselunga", "Roma Centro")
   receiptImage?: string; // Optional receipt photo/attachment (base64/data URL)
   syncStatus?: SyncStatus;
+  title?: string;        // Android schema alias for description
+  note?: string;         // Android schema alias for location/notes
+  isRecurring?: boolean; // Recurring flag
+  userId?: string;       // User ID owner
 }
 
 export interface QueueItem {

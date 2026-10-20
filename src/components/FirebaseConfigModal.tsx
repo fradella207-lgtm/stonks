@@ -271,13 +271,13 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
           {/* Fast Paste Section */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-app-sub block">
-              Incolla Rapido (Snippet Firebase Web):
+              Incolla Rapido (google-services.json di Android OPPURE Config Web):
             </label>
             <textarea
               value={pasteSnippet}
               onChange={(e) => setPasteSnippet(e.target.value)}
-              placeholder={'const firebaseConfig = {\n  apiKey: "AIzaSy...",\n  authDomain: "tuo-progetto.firebaseapp.com",\n  projectId: "tuo-progetto",\n  appId: "1:..."\n};'}
-              rows={4}
+              placeholder={'Incolla qui l\'intero file google-services.json scaricato per Android\nOPPURE lo snippet web:\nconst firebaseConfig = {\n  apiKey: "AIzaSy...",\n  projectId: "tuo-progetto",\n  appId: "1:..."\n};'}
+              rows={5}
               className="w-full p-3 rounded-2xl bg-app-subtle/60 border border-app text-xs font-mono-code text-app-main placeholder:text-app-muted focus:outline-none focus:border-amber-500/50 resize-none"
             />
             <div className="flex items-center justify-between gap-2">

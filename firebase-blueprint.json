@@ -1,26 +1,53 @@
 {
   "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "budgetLimit": { "type": "number" },
+        "themeMode": { "type": "string" },
+        "appLanguage": { "type": "string" },
+        "isEmailVerified": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "email"]
+    },
     "Transaction": {
       "title": "Transaction",
-      "description": "A financial income or expense entry in stonks",
+      "description": "A financial income or expense entry in stonks, compatible with Android and Web",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "date": { "type": "string" },
-        "type": { "type": "string", "enum": ["income", "expense"] },
-        "description": { "type": "string", "maxLength": 300 },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
         "amount": { "type": "number" },
+        "type": { "type": "string" },
+        "category": { "type": "string" },
+        "note": { "type": "string" },
+        "location": { "type": "string" },
+        "isRecurring": { "type": "boolean" },
+        "date": { "type": "string" },
         "month": { "type": "string" },
-        "category": { "type": "string", "maxLength": 100 },
-        "location": { "type": "string", "maxLength": 200 },
         "receiptImage": { "type": "string" },
-        "updatedAt": { "type": "number" },
-        "createdAt": { "type": "number" }
+        "timestamp": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
       },
-      "required": ["date", "type", "description", "amount", "month"]
+      "required": ["amount", "type"]
     }
   },
   "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile document"
+    },
     "/users/{userId}/transactions/{transactionId}": {
       "schema": "Transaction",
       "description": "User's personal finance transactions collection"
