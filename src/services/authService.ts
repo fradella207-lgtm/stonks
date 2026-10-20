@@ -13,9 +13,8 @@ import {
   onAuthStateChanged,
   User
 } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { auth, googleProvider, db } from "./firebase.ts";
-import { firebaseSyncService } from "./firebaseSync.ts";
+import { auth } from "./firebase.ts";
+import { firebaseSyncService, syncUserProfile as syncUserProfileBase } from "./firebaseSync.ts";
 
 /**
  * 1. ACCESSO CON GOOGLE
@@ -70,17 +69,5 @@ export async function syncUserProfile(user: {
   photoURL?: string | null;
   emailVerified?: boolean;
 }) {
-  if (!user || !user.uid) return;
-  const userRef = doc(db, "users", user.uid);
-  await setDoc(userRef, {
-    userId: user.uid,
-    email: user.email || "",
-    displayName: user.displayName || user.email?.split("@")[0] || "Utente",
-    photoUrl: user.photoURL || "",
-    budgetLimit: 500.0,
-    themeMode: "SYSTEM",
-    appLanguage: "IT",
-    isEmailVerified: Boolean(user.emailVerified),
-    updatedAt: serverTimestamp()
-  }, { merge: true });
+  return await syncUserProfileBase(user);
 }

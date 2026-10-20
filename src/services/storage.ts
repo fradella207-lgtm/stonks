@@ -130,27 +130,18 @@ export function getStoredTransactions(): Transaction[] {
 
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      const sanitized = parsed
-        .filter((item) => !DUMMY_SEED_DESCRIPTIONS.has(String(item.description || '').trim()))
-        .map((item) => ({
-          id: item.id || generateUUID(),
-          date: sanitizeDate(item.date),
-          type: item.type === 'income' ? ('income' as const) : ('expense' as const),
-          description: String(item.description || 'Senza descrizione').trim(),
-          amount: sanitizeAmount(item.amount),
-          month: item.month || extractMonth(sanitizeDate(item.date)),
-          category: item.category || '',
-          location: item.location || '',
-          receiptImage: item.receiptImage || '',
-          syncStatus: item.syncStatus || 'synced',
-        }));
-
-      // If we filtered out dummy items, persist the cleaned list immediately
-      if (sanitized.length !== parsed.length) {
-        secureStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(sanitized));
-      }
-
-      return sanitized;
+      return parsed.map((item) => ({
+        id: item.id || generateUUID(),
+        date: sanitizeDate(item.date),
+        type: item.type === 'income' ? ('income' as const) : ('expense' as const),
+        description: String(item.description || item.title || 'Senza descrizione').trim(),
+        amount: sanitizeAmount(item.amount),
+        month: item.month || extractMonth(sanitizeDate(item.date)),
+        category: item.category || '',
+        location: item.location || item.note || '',
+        receiptImage: item.receiptImage || '',
+        syncStatus: item.syncStatus || 'synced',
+      }));
     }
     return [];
   } catch (err) {

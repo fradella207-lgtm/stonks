@@ -21,7 +21,7 @@ export const defaultFirebaseConfig: FirebaseConfigObject = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:293899625048:web:stonks-web-app",
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyD2_9THCLgd9EBn5TfTN_H8rR09c4b0jqY",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "gen-lang-client-0071556773.firebaseapp.com",
-  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || "ai-studio-gestionespese-08ea9aff-fba0-474b-a22f-690b78028957",
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || "(default)",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "gen-lang-client-0071556773.firebasestorage.app",
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "293899625048",
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "",
@@ -38,6 +38,7 @@ export function getActiveFirebaseConfig(): FirebaseConfigObject {
         return {
           ...defaultFirebaseConfig,
           ...parsed,
+          firestoreDatabaseId: '(default)', // Always align with Android (default) database
         };
       } else {
         localStorage.removeItem('stonks_custom_firebase_config');

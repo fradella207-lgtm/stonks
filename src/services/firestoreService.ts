@@ -56,45 +56,28 @@ export async function saveTransaction({
   note?: string;
   date?: string | Date;
 }) {
-  const uid = auth.currentUser?.uid;
-  if (!uid) throw new Error("Utente non autenticato");
-
-  const transId = id ? id.toString() : Date.now().toString();
-  const docRef = doc(db, "users", uid, "transactions", transId);
-
+  const isIncome = String(type).toUpperCase() === 'INCOME';
   const parsedDate = date instanceof Date ? date : new Date(date);
   const isValidDate = !isNaN(parsedDate.getTime());
-  const dateStr = isValidDate ? parsedDate.toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
+  const dateStr = isValidDate ? parsedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
 
-  const payload: any = {
-    id: transId,
-    userId: uid,
-    title: (title || "").trim(),
+  return await firebaseSyncService.saveTransaction({
+    id: id ? id.toString() : Date.now().toString(),
+    title: (title || '').trim(),
+    description: (title || '').trim(),
     amount: parseFloat(String(amount)) || 0,
-    type: String(type).toUpperCase() === "INCOME" ? "INCOME" : "EXPENSE",
-    category: category || "Generale",
-    note: note || "",
-    isRecurring: false,
+    type: isIncome ? 'income' : 'expense',
+    category: category || 'Generale',
+    note: note || '',
+    location: note || '',
     date: dateStr,
-    timestamp: Timestamp.fromDate(isValidDate ? parsedDate : new Date()),
-    updatedAt: serverTimestamp()
-  };
-
-  if (!id) {
-    payload.createdAt = serverTimestamp();
-  }
-
-  await setDoc(docRef, payload, { merge: true });
-  return payload;
+    month: dateStr.substring(0, 7),
+  });
 }
 
 /**
  * 3. ELIMINA TRANSAZIONE
  */
 export async function deleteTransaction(id: string): Promise<void> {
-  const uid = auth.currentUser?.uid;
-  if (!uid) throw new Error("Utente non autenticato");
-
-  const docRef = doc(db, "users", uid, "transactions", id.toString());
-  await deleteDoc(docRef);
+  return await firebaseSyncService.deleteTransaction(id.toString());
 }

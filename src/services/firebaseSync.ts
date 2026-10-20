@@ -6,6 +6,7 @@
 import {
   collection,
   doc,
+  getDoc,
   setDoc,
   deleteDoc,
   onSnapshot,
@@ -30,7 +31,7 @@ import {
   reload,
   User,
 } from 'firebase/auth';
-import { auth, db, googleProvider } from './firebase.ts';
+import { auth, db, defaultDb, namedDb, googleProvider } from './firebase.ts';
 import { Transaction, UserProfile } from '../types.ts';
 import {
   getStoredTransactions,
@@ -38,6 +39,7 @@ import {
   sanitizeDate,
   sanitizeAmount,
   extractMonth,
+  saveStoredMonthlyBudget,
 } from './storage.ts';
 
 enum OperationType {
@@ -82,7 +84,7 @@ type CloudSyncListener = (status: 'synced' | 'syncing' | 'error' | 'offline') =>
 
 /**
  * Synchronizes or creates the user profile document in Firestore: users/{userId}
- * Exactly matches the Android app schema.
+ * Exactly matches the Android app schema and preserves user's budgetLimit and settings.
  */
 export async function syncUserProfile(user: {
   uid: string;
@@ -91,11 +93,42 @@ export async function syncUserProfile(user: {
   photoURL?: string | null;
   emailVerified?: boolean;
 }): Promise<void> {
+  if (!user || !user.uid) return;
   try {
-    const userRef = doc(db, 'users', user.uid);
-    await setDoc(
-      userRef,
-      {
+    const userRefDefault = doc(defaultDb, 'users', user.uid);
+    let existingData: any = null;
+
+    try {
+      const snap = await getDoc(userRefDefault);
+      if (snap.exists()) {
+        existingData = snap.data();
+      }
+    } catch (e) {
+      // snap check fallback
+    }
+
+    if (existingData) {
+      // Profile exists (e.g. created on Android): do NOT overwrite custom budgetLimit or theme!
+      if (existingData.budgetLimit && typeof existingData.budgetLimit === 'number') {
+        saveStoredMonthlyBudget(existingData.budgetLimit);
+      }
+
+      const updatePayload = {
+        userId: user.uid,
+        email: user.email || existingData.email || '',
+        displayName: user.displayName || existingData.displayName || user.email?.split('@')[0] || 'Utente',
+        photoUrl: user.photoURL || existingData.photoUrl || '',
+        isEmailVerified: Boolean(user.emailVerified ?? existingData.isEmailVerified),
+        updatedAt: serverTimestamp(),
+      };
+
+      await setDoc(userRefDefault, updatePayload, { merge: true });
+      if (namedDb) {
+        setDoc(doc(namedDb, 'users', user.uid), updatePayload, { merge: true }).catch(() => {});
+      }
+    } else {
+      // First time initialization with sensible defaults
+      const initialPayload = {
         userId: user.uid,
         email: user.email || '',
         displayName: user.displayName || user.email?.split('@')[0] || 'Utente',
@@ -104,10 +137,15 @@ export async function syncUserProfile(user: {
         themeMode: 'SYSTEM',
         appLanguage: 'IT',
         isEmailVerified: Boolean(user.emailVerified),
+        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
+      };
+
+      await setDoc(userRefDefault, initialPayload, { merge: true });
+      if (namedDb) {
+        setDoc(doc(namedDb, 'users', user.uid), initialPayload, { merge: true }).catch(() => {});
+      }
+    }
   } catch (e) {
     console.warn('syncUserProfile error:', e);
   }
@@ -118,6 +156,7 @@ class FirebaseSyncService {
   private syncListeners: Set<CloudSyncListener> = new Set();
   private currentUser: UserProfile | null = null;
   private unsubscribeFirestore: (() => void) | null = null;
+  private unsubscribeProfile: (() => void) | null = null;
   private syncStatus: 'synced' | 'syncing' | 'error' | 'offline' = 'synced';
   private isAuthReady: boolean = false;
 
@@ -169,6 +208,10 @@ class FirebaseSyncService {
         if (this.unsubscribeFirestore) {
           this.unsubscribeFirestore();
           this.unsubscribeFirestore = null;
+        }
+        if (this.unsubscribeProfile) {
+          this.unsubscribeProfile();
+          this.unsubscribeProfile = null;
         }
       }
       this.notifyAuth();
@@ -232,12 +275,6 @@ class FirebaseSyncService {
 
       // Sincronizza o crea il profilo utente su Firestore (users/{userId})
       await syncUserProfile(u);
-
-      if (isNewUser) {
-        // A brand new account starts completely clean
-        saveTransactionsList([]);
-        localStorage.setItem('stonks_new_account_welcome_banner', 'true');
-      }
 
       this.subscribeToUserFirestore(u.uid);
       this.notifySync('synced');
@@ -404,6 +441,10 @@ class FirebaseSyncService {
       this.unsubscribeFirestore();
       this.unsubscribeFirestore = null;
     }
+    if (this.unsubscribeProfile) {
+      this.unsubscribeProfile();
+      this.unsubscribeProfile = null;
+    }
     localStorage.removeItem('stonks_auth_cached_user_v2');
     await fbSignOut(auth);
     this.currentUser = null;
@@ -411,15 +452,21 @@ class FirebaseSyncService {
     this.notifySync('synced');
   }
 
-  // Real-time Firestore sync listener for users/{uid}/transactions
+  // Real-time Firestore sync listener for users/{uid}/transactions on defaultDb (matching Android 1:1)
   private subscribeToUserFirestore(uid: string) {
     if (this.unsubscribeFirestore) {
       this.unsubscribeFirestore();
+      this.unsubscribeFirestore = null;
+    }
+    if (this.unsubscribeProfile) {
+      this.unsubscribeProfile();
+      this.unsubscribeProfile = null;
     }
 
     const path = `users/${uid}/transactions`;
     try {
-      const colRef = collection(db, 'users', uid, 'transactions');
+      // 1. Real-time listener on defaultDb (used by Android app)
+      const colRef = collection(defaultDb, 'users', uid, 'transactions');
 
       this.unsubscribeFirestore = onSnapshot(
         colRef,
@@ -434,6 +481,11 @@ class FirebaseSyncService {
             if (!dateStr && data.timestamp?.toDate) {
               try {
                 dateStr = data.timestamp.toDate().toISOString().split('T')[0];
+              } catch (e) {}
+            }
+            if (!dateStr && data.createdAt?.toDate) {
+              try {
+                dateStr = data.createdAt.toDate().toISOString().split('T')[0];
               } catch (e) {}
             }
             if (!dateStr) {
@@ -479,13 +531,69 @@ class FirebaseSyncService {
           this.notifySync('error');
         }
       );
+
+      // 2. Real-time listener on user profile to react to budget changes made on Android
+      const userRef = doc(defaultDb, 'users', uid);
+      this.unsubscribeProfile = onSnapshot(userRef, (userSnap) => {
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          if (data.budgetLimit && typeof data.budgetLimit === 'number') {
+            saveStoredMonthlyBudget(data.budgetLimit);
+          }
+        }
+      });
+
+      // 3. Bidirectional bridge between namedDb, defaultDb, and local cache
+      this.bridgeDatabasesAndLocal(uid).catch((err) => {
+        console.warn('Silent bridge note:', err);
+      });
     } catch (err) {
       handleFirestoreError(err, OperationType.GET, path);
       this.notifySync('error');
     }
   }
 
-  // Save transaction to Firestore in background: users/{userId}/transactions/{transId}
+  // Bidirectional bridge: seamlessly copies transactions between namedDb, defaultDb, and local
+  private async bridgeDatabasesAndLocal(uid: string): Promise<void> {
+    try {
+      const defaultCol = collection(defaultDb, 'users', uid, 'transactions');
+      const defaultSnap = await getDocs(defaultCol).catch(() => null);
+      const defaultIds = new Set(defaultSnap ? defaultSnap.docs.map((d) => d.id) : []);
+
+      // If named database exists, migrate any transaction from namedDb into defaultDb and mirror
+      if (namedDb) {
+        try {
+          const namedCol = collection(namedDb, 'users', uid, 'transactions');
+          const namedSnap = await getDocs(namedCol).catch(() => null);
+          if (namedSnap && !namedSnap.empty) {
+            for (const docSnap of namedSnap.docs) {
+              if (!defaultIds.has(docSnap.id)) {
+                await setDoc(doc(defaultDb, 'users', uid, 'transactions', docSnap.id), docSnap.data(), {
+                  merge: true,
+                });
+                defaultIds.add(docSnap.id);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('namedDb bridge note:', e);
+        }
+      }
+
+      // Check if local storage has any offline/unsynced transactions created before login
+      const localTxs = getStoredTransactions();
+      for (const tx of localTxs) {
+        if (!defaultIds.has(tx.id)) {
+          await this.saveTransaction(tx);
+          defaultIds.add(tx.id);
+        }
+      }
+    } catch (e) {
+      console.warn('bridgeDatabasesAndLocal note:', e);
+    }
+  }
+
+  // Save transaction to Firestore: users/{userId}/transactions/{transId}
   public async saveTransaction(tx: Transaction): Promise<void> {
     if (!this.currentUser) return;
     const uid = this.currentUser.uid;
@@ -494,7 +602,7 @@ class FirebaseSyncService {
 
     try {
       this.notifySync('syncing');
-      const docRef = doc(db, 'users', uid, 'transactions', transId);
+      const docRefDefault = doc(defaultDb, 'users', uid, 'transactions', transId);
       const isIncome = tx.type === 'income' || (tx as any).type === 'INCOME';
       const desc = (tx.title || tx.description || '').trim();
       const loc = (tx.note || tx.location || '').trim();
@@ -516,18 +624,22 @@ class FirebaseSyncService {
         date: dateStr,
         month: tx.month || extractMonth(dateStr),
         timestamp: Timestamp.fromDate(isNaN(dateObj.getTime()) ? new Date() : dateObj),
+        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
-
-      if (!tx.id) {
-        payload.createdAt = serverTimestamp();
-      }
 
       if (tx.receiptImage) {
         payload.receiptImage = tx.receiptImage;
       }
 
-      await setDoc(docRef, payload, { merge: true });
+      // 1. Primary write to defaultDb (Android receives it immediately)
+      await setDoc(docRefDefault, payload, { merge: true });
+
+      // 2. Mirror to namedDb if active
+      if (namedDb) {
+        setDoc(doc(namedDb, 'users', uid, 'transactions', transId), payload, { merge: true }).catch(() => {});
+      }
+
       this.notifySync('synced');
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, path);
@@ -535,7 +647,7 @@ class FirebaseSyncService {
     }
   }
 
-  // Delete transaction from Firestore in background: users/{userId}/transactions/{id}
+  // Delete transaction from Firestore: users/{userId}/transactions/{id}
   public async deleteTransaction(id: string): Promise<void> {
     if (!this.currentUser) return;
     const uid = this.currentUser.uid;
@@ -544,8 +656,13 @@ class FirebaseSyncService {
 
     try {
       this.notifySync('syncing');
-      const docRef = doc(db, 'users', uid, 'transactions', transId);
-      await deleteDoc(docRef);
+      const docRefDefault = doc(defaultDb, 'users', uid, 'transactions', transId);
+      await deleteDoc(docRefDefault);
+
+      if (namedDb) {
+        deleteDoc(doc(namedDb, 'users', uid, 'transactions', transId)).catch(() => {});
+      }
+
       this.notifySync('synced');
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, path);
@@ -561,10 +678,10 @@ class FirebaseSyncService {
 
     try {
       this.notifySync('syncing');
-      const batch = writeBatch(db);
+      const batch = writeBatch(defaultDb);
       for (const tx of transactions) {
         const transId = tx.id ? tx.id.toString() : Date.now().toString();
-        const docRef = doc(db, 'users', uid, 'transactions', transId);
+        const docRef = doc(defaultDb, 'users', uid, 'transactions', transId);
         const isIncome = tx.type === 'income' || (tx as any).type === 'INCOME';
         const desc = (tx.title || tx.description || '').trim();
         const loc = (tx.note || tx.location || '').trim();
@@ -588,6 +705,7 @@ class FirebaseSyncService {
             date: dateStr,
             month: tx.month || extractMonth(dateStr),
             timestamp: Timestamp.fromDate(isNaN(dateObj.getTime()) ? new Date() : dateObj),
+            createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             ...(tx.receiptImage ? { receiptImage: tx.receiptImage } : {}),
           },
