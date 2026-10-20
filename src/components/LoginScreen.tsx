@@ -12,68 +12,47 @@ import {
   User as UserIcon,
   ShieldCheck,
   AlertCircle,
-  ExternalLink,
-  RefreshCw,
   KeyRound,
   ArrowLeft,
   CheckCircle2,
-  Database,
   Send,
-  Copy,
-  Check,
-  Smartphone,
 } from 'lucide-react';
 import { firebaseSyncService } from '../services/firebaseSync.ts';
 import { UserProfile } from '../types.ts';
-import { FirebaseConfigModal } from './FirebaseConfigModal.tsx';
-import { getActiveFirebaseConfig } from '../services/firebaseConfig.ts';
 
 interface LoginScreenProps {
   onSuccess: (user: UserProfile) => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
-  // Tabs: 'login' | 'register' | 'forgot'
-  const [activeTab, setActiveTab] = useState<'login' | 'register' | 'forgot'>('login');
+  // Mode: 'login' | 'register' | 'forgot'
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
 
-  // Diagnostic states for Google Auth errors
-  const [unauthorizedDomain, setUnauthorizedDomain] = useState<string | null>(null);
-  const [isOperationNotAllowed, setIsOperationNotAllowed] = useState(false);
-  const [copiedDomain, setCopiedDomain] = useState(false);
-
-  const activeConfig = getActiveFirebaseConfig();
-  const isCustomProject = Boolean(localStorage.getItem('stonks_custom_firebase_config'));
-
-  const handleTabChange = (tab: 'login' | 'register' | 'forgot') => {
-    setActiveTab(tab);
+  const switchMode = (newMode: 'login' | 'register' | 'forgot') => {
+    setMode(newMode);
     setErrorMsg('');
     setSuccessMsg('');
-    setUnauthorizedDomain(null);
-    setIsOperationNotAllowed(false);
   };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
-    setIsOperationNotAllowed(false);
-    setUnauthorizedDomain(null);
     setLoading(true);
 
     try {
-      if (activeTab === 'register') {
+      if (mode === 'register') {
         if (!email.trim() || !password.trim()) {
-          throw new Error('Inserisci email e password.');
+          throw new Error('Inserisci un indirizzo email e una password.');
         }
         if (password.length < 6) {
-          throw new Error('La password deve avere almeno 6 caratteri.');
+          throw new Error('La password deve contenere almeno 6 caratteri.');
         }
 
         const profile = await firebaseSyncService.registerWithEmail(
@@ -95,25 +74,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
       const code = err?.code || '';
       const msg = String(err?.message || '');
 
-      if (code === 'auth/operation-not-allowed' || msg.includes('operation-not-allowed')) {
-        setIsOperationNotAllowed(true);
-        setErrorMsg(
-          activeTab === 'register'
-            ? 'Il provider "Email/Password" non è ancora attivo nella console Firebase del progetto.'
-            : 'L\'accesso "Email/Password" non è ancora attivo nella console Firebase del progetto.'
-        );
-      } else if (code === 'auth/email-already-in-use') {
-        setErrorMsg('Questa email è già registrata. Effettua il login oppure recupera la password.');
-      } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+      if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
         setErrorMsg('Email o password errati. Riprova o usa "Password dimenticata".');
       } else if (code === 'auth/user-not-found') {
-        setErrorMsg('Nessun account associato a questa email.');
+        setErrorMsg('Nessun account trovato con questa email. Registrati per iniziare.');
+      } else if (code === 'auth/email-already-in-use') {
+        setErrorMsg('Questa email è già associata a un account. Effettua il login.');
       } else if (code === 'auth/invalid-email') {
-        setErrorMsg('Formato email non valido.');
+        setErrorMsg('Inserisci un formato email valido.');
       } else if (code === 'auth/weak-password') {
         setErrorMsg('La password è troppo debole (minimo 6 caratteri).');
+      } else if (code === 'auth/too-many-requests') {
+        setErrorMsg('Troppi tentativi falliti. Riprova tra qualche minuto.');
+      } else if (code === 'auth/network-request-failed') {
+        setErrorMsg('Errore di connessione. Controlla la rete internet.');
       } else {
-        setErrorMsg(err.message || 'Errore durante l\'autenticazione. Riprova.');
+        setErrorMsg(err.message || 'Si è verificato un errore. Riprova.');
       }
     } finally {
       setLoading(false);
@@ -124,11 +100,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
-    setUnauthorizedDomain(null);
-    setIsOperationNotAllowed(false);
 
     if (!email.trim()) {
-      setErrorMsg('Inserisci l\'indirizzo email del tuo account per ricevere il link di recupero.');
+      setErrorMsg('Inserisci l\'indirizzo email del tuo account.');
       return;
     }
 
@@ -136,17 +110,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
     try {
       await firebaseSyncService.sendPasswordReset(email.trim());
       setSuccessMsg(
-        `Email inviata con successo a ${email.trim()}! Controlla la casella di posta (e lo spam) per reimpostare la tua password.`
+        `Email di recupero inviata a ${email.trim()}! Controlla la posta in arrivo (anche la cartella spam) per reimpostare la tua password.`
       );
     } catch (err: any) {
       console.warn('Password reset error:', err);
       const code = err?.code || '';
       if (code === 'auth/user-not-found') {
-        setErrorMsg('Nessun account registrato con questo indirizzo email.');
+        setErrorMsg('Nessun account associato a questa email.');
       } else if (code === 'auth/invalid-email') {
-        setErrorMsg('Formato email non valido.');
+        setErrorMsg('Inserisci un indirizzo email valido.');
       } else {
-        setErrorMsg(err.message || 'Impossibile inviare l\'email di recupero. Riprova.');
+        setErrorMsg('Impossibile inviare l\'email di recupero. Riprova tra poco.');
       }
     } finally {
       setLoading(false);
@@ -156,8 +130,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
   const handleGoogleLogin = async () => {
     setErrorMsg('');
     setSuccessMsg('');
-    setIsOperationNotAllowed(false);
-    setUnauthorizedDomain(null);
     setLoading(true);
 
     try {
@@ -173,124 +145,90 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
         return;
       }
 
-      if (code === 'auth/unauthorized-domain' || msg.includes('unauthorized-domain')) {
-        const currentHost = window.location.hostname;
-        setUnauthorizedDomain(currentHost);
-        setErrorMsg(
-          `Il dominio web "${currentHost}" non è ancora autorizzato per Google Auth nella console Firebase.`
-        );
-      } else if (code === 'auth/popup-blocked' || msg.includes('popup-blocked')) {
-        setErrorMsg('Il browser ha bloccato la finestra popup di Google. Abilita i popup per questo sito e riprova.');
-      } else if (code === 'auth/operation-not-allowed' || msg.includes('operation-not-allowed')) {
-        setIsOperationNotAllowed(true);
-        setErrorMsg('L\'accesso con Google non è ancora attivo nella console Firebase del progetto.');
+      if (code === 'auth/popup-blocked' || msg.includes('popup-blocked')) {
+        setErrorMsg('La finestra di Google è stata bloccata. Abilita i popup nel browser o usa Email e Password.');
+      } else if (code === 'auth/unauthorized-domain' || msg.includes('unauthorized-domain')) {
+        setErrorMsg('Accesso Google non disponibile in questo ambiente. Accedi o crea un account con Email e Password.');
       } else {
-        setErrorMsg(err.message || 'Accesso con Google non riuscito. Verifica la connessione o il progetto Firebase.');
+        setErrorMsg('Accesso con Google non riuscito. Accedi con Email e Password.');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const copyDomainToClipboard = () => {
-    if (unauthorizedDomain) {
-      navigator.clipboard.writeText(unauthorizedDomain);
-      setCopiedDomain(true);
-      setTimeout(() => setCopiedDomain(false), 2500);
-    }
-  };
-
-  const firebaseConsoleProvidersUrl = `https://console.firebase.google.com/project/${activeConfig.projectId}/authentication/providers`;
-  const firebaseConsoleSettingsUrl = `https://console.firebase.google.com/project/${activeConfig.projectId}/authentication/settings`;
-
   return (
-    <div className="min-h-screen bg-app-canvas flex items-center justify-center p-3 sm:p-4 relative overflow-hidden text-app-main">
-      {/* Background Dots */}
-      <div className="fixed inset-0 bg-dots pointer-events-none opacity-30 z-0" />
+    <div className="min-h-screen bg-app-canvas flex items-center justify-center p-4 relative overflow-hidden text-app-main">
+      {/* Subtle Background Dots */}
+      <div className="fixed inset-0 bg-dots pointer-events-none opacity-25 z-0" />
 
       {/* Ambient background glow */}
       <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-red-600/10 blur-[100px] pointer-events-none" />
       <div className="absolute -bottom-32 -right-32 w-80 h-80 rounded-full bg-emerald-500/10 blur-[100px] pointer-events-none" />
 
-      <div className="relative z-10 w-full max-w-md bg-app-modal border border-app rounded-[32px] p-5 sm:p-8 shadow-2xl backdrop-blur-xl">
-        {/* Firebase Android Sync Status Banner (Automatic 1:1 Connection) */}
-        <div className="mb-4 p-3 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-              <Smartphone className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[10px] font-mono-code font-bold uppercase tracking-wider text-emerald-400">
-                  Firebase Android Collegato
-                </span>
-              </div>
-              <p className="text-[11px] font-mono-code text-app-sub truncate">
-                Progetto: <span className="text-app-main font-semibold">{activeConfig.projectId}</span>
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono-code text-emerald-400 shrink-0 font-medium">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Sincronizzato</span>
-          </div>
-        </div>
-
+      <div className="relative z-10 w-full max-w-md bg-app-modal border border-app rounded-[32px] p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
         {/* Header Branding */}
-        <div className="flex flex-col items-center text-center mb-5">
-          <div className="relative flex items-center justify-center w-12 h-12 rounded-2xl border border-emerald-500/30 bg-slate-950/90 mb-2 shadow-lg overflow-hidden">
-            <img src="/icona.svg" alt="stonks logo" className="w-full h-full object-contain" />
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl border border-emerald-500/30 bg-slate-950/90 mb-3 shadow-lg overflow-hidden transition-transform hover:scale-105">
+            <img src="/icona.svg" alt="stonks logo" className="w-full h-full object-contain p-1.5" />
           </div>
 
-          <h1 className="font-mono-code text-lg font-bold tracking-tight uppercase flex items-center gap-2 text-app-main">
+          <h1 className="font-mono-code text-xl font-black tracking-widest uppercase flex items-center gap-2 text-app-main">
             <span>stonks</span>
-            <span className="text-[9px] px-2 py-0.5 rounded-full bg-app-subtle border border-app text-app-muted font-normal lowercase">
-              v2.6
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-app-subtle border border-app text-app-muted font-normal lowercase tracking-normal">
+              0ms • v2.6
             </span>
           </h1>
-          <p className="text-[11px] text-app-muted font-mono-code mt-0.5">
+          <p className="text-xs text-app-muted font-mono-code mt-1">
             FinTech Minimal • Gestione Spese & Entrate
           </p>
         </div>
 
-        {/* 3 Prominent Tabs: Accedi / Crea Account / Password Dimenticata */}
-        <div className="grid grid-cols-3 gap-1 p-1 bg-app-subtle border border-app rounded-2xl mb-4">
-          <button
-            type="button"
-            onClick={() => handleTabChange('login')}
-            className={`py-2 text-center rounded-xl text-xs font-mono-code transition-all cursor-pointer ${
-              activeTab === 'login'
-                ? 'bg-app-card text-app-main font-bold shadow-sm border border-app'
-                : 'text-app-muted hover:text-app-main'
-            }`}
-          >
-            Accedi
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('register')}
-            className={`py-2 text-center rounded-xl text-xs font-mono-code transition-all cursor-pointer ${
-              activeTab === 'register'
-                ? 'bg-app-card text-app-main font-bold shadow-sm border border-app'
-                : 'text-app-muted hover:text-app-main'
-            }`}
-          >
-            Registrati
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('forgot')}
-            className={`py-2 px-1 text-center rounded-xl text-xs font-mono-code transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-              activeTab === 'forgot'
-                ? 'bg-app-card text-amber-400 font-bold shadow-sm border border-amber-500/40'
-                : 'text-app-muted hover:text-amber-400'
-            }`}
-          >
-            <KeyRound className="w-3.5 h-3.5" />
-            <span className="truncate">Password dimenticata</span>
-          </button>
-        </div>
+        {/* Segmented Control: Accedi / Registrati (When not in forgot password mode) */}
+        {mode !== 'forgot' ? (
+          <div className="grid grid-cols-2 gap-1 p-1 bg-app-subtle border border-app rounded-2xl mb-5">
+            <button
+              type="button"
+              onClick={() => switchMode('login')}
+              className={`py-2.5 text-center rounded-xl text-xs font-mono-code transition-all cursor-pointer font-bold ${
+                mode === 'login'
+                  ? 'bg-app-card text-app-main shadow-sm border border-app'
+                  : 'text-app-muted hover:text-app-main'
+              }`}
+            >
+              Accedi
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMode('register')}
+              className={`py-2.5 text-center rounded-xl text-xs font-mono-code transition-all cursor-pointer font-bold ${
+                mode === 'register'
+                  ? 'bg-app-card text-app-main shadow-sm border border-app'
+                  : 'text-app-muted hover:text-app-main'
+              }`}
+            >
+              Registrati
+            </button>
+          </div>
+        ) : (
+          /* Header when in Forgot Password Mode */
+          <div className="mb-5 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => switchMode('login')}
+              className="w-9 h-9 rounded-xl bg-app-subtle border border-app hover:bg-app-hover flex items-center justify-center text-app-muted hover:text-app-main transition-colors cursor-pointer shrink-0"
+              title="Torna al login"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <div>
+              <h2 className="text-sm font-mono-code font-bold text-app-main">Recupera Password</h2>
+              <p className="text-[11px] font-mono-code text-app-muted">
+                Ti invieremo un link per reimpostarla
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Feedback Messages */}
         {errorMsg && (
@@ -307,87 +245,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
           </div>
         )}
 
-        {/* Diagnostic: Unauthorized Domain for Google Sign In */}
-        {unauthorizedDomain && (
-          <div className="mb-4 p-3.5 bg-amber-950/50 border border-amber-500/50 rounded-2xl text-amber-100 text-xs font-mono-code space-y-2.5">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <div className="font-bold">Come autorizzare questo dominio per Google Login:</div>
-            </div>
-            <p className="text-[11px] text-amber-200/90 leading-relaxed font-sans">
-              Firebase richiede che l'indirizzo del browser sia autorizzato prima di permettere il login Google:
-            </p>
-            <div className="flex items-center justify-between bg-black/60 px-3 py-2 rounded-xl border border-amber-500/30">
-              <span className="text-[11px] truncate font-mono-code">{unauthorizedDomain}</span>
-              <button
-                type="button"
-                onClick={copyDomainToClipboard}
-                className="text-amber-300 hover:text-white p-1 transition-colors flex items-center gap-1 text-[11px] cursor-pointer"
-              >
-                {copiedDomain ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedDomain ? 'Copiato' : 'Copia'}</span>
-              </button>
-            </div>
-            <div className="flex items-center gap-2 pt-1">
-              <a
-                href={firebaseConsoleSettingsUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 py-1.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 transition-colors text-center"
-              >
-                <span>Apri Impostazioni Domini</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          </div>
-        )}
-
-        {/* Diagnostic: Provider Not Allowed */}
-        {isOperationNotAllowed && (
-          <div className="mb-4 p-3.5 bg-amber-950/50 border border-amber-500/50 rounded-2xl text-amber-100 text-xs font-mono-code space-y-2">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <div className="font-bold">Abilita il metodo di accesso in Firebase:</div>
-            </div>
-            <p className="text-[11px] text-amber-200/90 leading-relaxed font-sans">
-              Apri la console Firebase e imposta lo stato su "Abilitato" in Authentication &gt; Sign-in method.
-            </p>
-            <div className="flex items-center gap-2 pt-1">
-              <a
-                href={firebaseConsoleProvidersUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 py-1.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 transition-colors text-center"
-              >
-                <span>Apri Console Firebase</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsOperationNotAllowed(false);
-                  setErrorMsg('');
-                }}
-                className="py-1.5 px-3 rounded-xl bg-app-card border border-app hover:bg-app-hover text-app-main font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <RefreshCw className="w-3 h-3" />
-                <span>Riprova</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: PASSWORD DIMENTICATA (RECUPERA PASSWORD) */}
-        {activeTab === 'forgot' ? (
-          <form onSubmit={handlePasswordReset} className="space-y-3.5">
-            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs font-mono-code text-amber-300 flex items-start gap-2">
-              <KeyRound className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <p className="leading-relaxed">
-                Inserisci l'email del tuo account: ti invieremo un link sicuro tramite Firebase Auth per creare una nuova password.
-              </p>
-            </div>
-
-            <div className="space-y-1">
+        {/* Form: Forgot Password */}
+        {mode === 'forgot' ? (
+          <form onSubmit={handlePasswordReset} className="space-y-4">
+            <div className="space-y-1.5">
               <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted block">
                 Indirizzo Email dell'account
               </label>
@@ -399,7 +260,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
                   placeholder="nome@esempio.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-app-input border border-app rounded-2xl pl-10 pr-4 py-2.5 text-xs font-mono-code text-app-main placeholder:text-app-muted/50 outline-none focus:border-amber-500 transition-colors"
+                  className="w-full bg-app-input border border-app rounded-2xl pl-10 pr-4 py-3 text-xs font-mono-code text-app-main placeholder:text-app-muted/50 outline-none focus:border-red-500 transition-colors"
                 />
               </div>
             </div>
@@ -407,31 +268,31 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-mono-code font-bold text-xs uppercase tracking-widest shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50 mt-2"
+              className="w-full py-3.5 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-mono-code font-bold text-xs uppercase tracking-widest shadow-lg shadow-red-900/30 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50"
             >
               {loading ? (
                 <span className="animate-pulse">Invio in corso...</span>
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  <span>Invia link di recupero password</span>
+                  <span>Invia link di recupero</span>
                 </>
               )}
             </button>
 
             <button
               type="button"
-              onClick={() => handleTabChange('login')}
+              onClick={() => switchMode('login')}
               className="w-full py-2 text-center text-xs font-mono-code text-app-muted hover:text-app-main flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Ricordi la password? Torna al login</span>
+              <span>Ricordi la password? Accedi</span>
             </button>
           </form>
         ) : (
-          /* TAB 1 & 2: ACCEDI / REGISTRATI */
+          /* Form: Login or Register */
           <form onSubmit={handleEmailAuth} className="space-y-3.5">
-            {activeTab === 'register' && (
+            {mode === 'register' && (
               <div className="space-y-1">
                 <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted block">
                   Nome o Nickname (Opzionale)
@@ -467,11 +328,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
             </div>
 
             <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted block">
-                  Password
-                </label>
-              </div>
+              <label className="text-[10px] font-mono-code uppercase tracking-wider text-app-muted block">
+                Password
+              </label>
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-app-muted" />
                 <input
@@ -484,16 +343,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
                 />
               </div>
 
-              {/* Explicit, unmistakable "Password Dimenticata?" link right under password input */}
-              {activeTab === 'login' && (
-                <div className="flex items-center justify-between pt-1.5 pb-0.5">
-                  <span className="text-[10px] text-app-muted">Non ricordi la password?</span>
+              {/* Explicit, clean Password Dimenticata link right below password */}
+              {mode === 'login' && (
+                <div className="flex justify-end pt-1">
                   <button
                     type="button"
-                    onClick={() => handleTabChange('forgot')}
-                    className="text-[11px] font-mono-code text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    onClick={() => switchMode('forgot')}
+                    className="text-[11px] font-mono-code text-app-muted hover:text-amber-400 font-medium flex items-center gap-1 transition-colors cursor-pointer"
                   >
-                    <KeyRound className="w-3.5 h-3.5" />
+                    <KeyRound className="w-3 h-3" />
                     <span>Password dimenticata?</span>
                   </button>
                 </div>
@@ -503,11 +361,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-mono-code font-bold text-xs uppercase tracking-widest shadow-lg shadow-red-900/30 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50 mt-2"
+              className="w-full py-3.5 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-mono-code font-bold text-xs uppercase tracking-widest shadow-lg shadow-red-900/30 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50 mt-1"
             >
               {loading ? (
-                <span className="animate-pulse">Operazione in corso...</span>
-              ) : activeTab === 'register' ? (
+                <span className="animate-pulse">Accesso in corso...</span>
+              ) : mode === 'register' ? (
                 <>
                   <UserPlus className="w-4 h-4" />
                   <span>Crea Nuovo Account</span>
@@ -523,7 +381,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
         )}
 
         {/* Separator & Google Sign In */}
-        {activeTab !== 'forgot' && (
+        {mode !== 'forgot' && (
           <>
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
@@ -534,55 +392,44 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess }) => {
               </div>
             </div>
 
-            {/* Quick Google Sign In */}
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                className="w-full py-2.5 px-4 rounded-2xl border border-app bg-app-card hover:bg-app-hover text-app-main font-mono-code text-xs flex items-center justify-center gap-2.5 transition-colors cursor-pointer active:scale-[0.98]"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                  />
-                </svg>
-                <span>Continua con account Google</span>
-              </button>
-            </div>
+            {/* Google Sign In */}
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              className="w-full py-3 px-4 rounded-2xl border border-app bg-app-card hover:bg-app-hover text-app-main font-mono-code text-xs font-bold flex items-center justify-center gap-2.5 transition-colors cursor-pointer active:scale-[0.98]"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                />
+              </svg>
+              <span>Continua con Google</span>
+            </button>
           </>
         )}
 
-        {/* Security and automatic Android backend connection footer */}
-        <div className="mt-5 pt-3.5 border-t border-app-subtle flex flex-col items-center gap-1.5 text-center">
-          <div className="flex items-center justify-center gap-2 text-[11px] font-mono-code text-emerald-400 font-medium">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Connessione diretta Firebase con app Android attiva</span>
-          </div>
-          <p className="text-[10px] font-mono-code text-app-muted">
-            Transazioni e profilo sincronizzati in tempo reale
-          </p>
+        {/* Clean, minimalist security badge */}
+        <div className="mt-6 pt-4 border-t border-app-subtle flex items-center justify-center gap-1.5 text-center">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <span className="text-[10px] font-mono-code text-app-muted">
+            Crittografia sicura • Sincronizzazione automatica
+          </span>
         </div>
       </div>
-
-      {/* Firebase Config Modal for Android Project Sync */}
-      <FirebaseConfigModal
-        isOpen={isFirebaseModalOpen}
-        onClose={() => setIsFirebaseModalOpen(false)}
-      />
     </div>
   );
 };

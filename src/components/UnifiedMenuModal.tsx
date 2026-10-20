@@ -31,9 +31,7 @@ import {
 } from 'lucide-react';
 import { AppSyncState, ThemeMode, UserProfile } from '../types.ts';
 import { FeedbackModal } from './FeedbackModal.tsx';
-import { FirebaseConfigModal } from './FirebaseConfigModal.tsx';
 import { firebaseSyncService } from '../services/firebaseSync.ts';
-import { getActiveFirebaseConfig } from '../services/firebaseConfig.ts';
 import { useLanguage, SUPPORTED_LANGUAGES, SupportedLanguage } from '../services/i18n.ts';
 
 interface UnifiedMenuModalProps {
@@ -74,7 +72,6 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
   const [showFeedbackModal, setShowFeedbackModal] = useState<boolean>(false);
   const [isEditingBudget, setIsEditingBudget] = useState<boolean>(false);
   const [budgetValue, setBudgetValue] = useState<string>(String(monthlyBudget || 1500));
-  const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState<boolean>(false);
   const [verificationMsg, setVerificationMsg] = useState<{ text: string; success: boolean } | null>(null);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
 
@@ -348,19 +345,13 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
                 </div>
               )}
 
-              {/* Direct Firebase Android Project Connection Button */}
-              <div className="pt-2 border-t border-app-subtle">
-                <button
-                  type="button"
-                  onClick={() => setIsFirebaseModalOpen(true)}
-                  className="w-full p-2.5 rounded-xl bg-app-card hover:bg-app-hover border border-app flex items-center justify-between text-app-sub hover:text-app-main transition-colors cursor-pointer text-left"
-                >
-                  <div className="flex items-center gap-2 text-[11px] font-bold">
-                    <Database className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span>Progetto Firebase & Sincronizzazione Android</span>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-app-muted" />
-                </button>
+              {/* Cloud Sync Status */}
+              <div className="pt-2 border-t border-app-subtle flex items-center justify-between text-[11px] font-mono-code text-app-muted">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Sincronizzazione Cloud attiva</span>
+                </div>
+                <span className="text-[10px] text-emerald-400 font-bold uppercase">Tempo reale</span>
               </div>
             </div>
           </div>
@@ -632,12 +623,6 @@ export const UnifiedMenuModal: React.FC<UnifiedMenuModalProps> = ({
         isOpen={showFeedbackModal}
         onClose={() => setShowFeedbackModal(false)}
         user={user}
-      />
-
-      {/* Firebase Project Connection Modal */}
-      <FirebaseConfigModal
-        isOpen={isFirebaseModalOpen}
-        onClose={() => setIsFirebaseModalOpen(false)}
       />
     </div>
   );
